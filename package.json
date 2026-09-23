@@ -1,0 +1,12 @@
+{
+  "name": "livreur-client-ouaga",
+  "private": true,
+  "description": "Application de mise en relation livreurs-clients a Ouagadougou, Burkina Faso",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "mobile": "npm --workspace apps/mobile run start",
+    "backoffice": "npm --workspace apps/backoffice run dev"
+  }
+}
