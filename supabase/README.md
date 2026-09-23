@@ -33,6 +33,7 @@ Pour lier ce dossier à un projet Supabase distant : `npx supabase link --projec
 - [`20260923013412_auth_otp_rate_limit.sql`](migrations/20260923013412_auth_otp_rate_limit.sql) — limite de trois demandes de code par numéro et par heure (5.1), appelée par la fonction Edge `demander-code-connexion`.
 - [`20260923152143_inscription_livreur_admin.sql`](migrations/20260923152143_inscription_livreur_admin.sql) — table `administrateurs` (accès back-office, distinct du parcours téléphone/OTP), bucket de stockage privé `pieces-identite` avec policies scopées par dossier utilisateur, `soumettre_inscription_livreur` (parcours 4.5), `valider_livreur`/`rejeter_livreur` (réservées aux administrateurs, journalisées dans `journal_admin`).
 - [`20260923161514_zones_grille_tarifaire.sql`](migrations/20260923161514_zones_grille_tarifaire.sql) — `creer_zone`/`definir_statut_zone`, `creer_grille_brouillon` (avec copie optionnelle d'une grille existante), `definir_tarif` (symétrique par défaut, RG-05), `activer_grille` (archive l'ancienne grille active dans la même transaction, RG-02). Réservées aux administrateurs.
+- [`20260923185220_visibilite_contacts_realtime.sql`](migrations/20260923185220_visibilite_contacts_realtime.sql) — une fois une course attribuée, l'expéditeur peut lire le nom/note/compteur du livreur et le livreur peut lire les coordonnées de l'expéditeur (parcours 4.2/4.3) ; active le temps réel Supabase sur `courses`.
 
 Reste à écrire : notation, signalements (traitement), tableau de bord.
 

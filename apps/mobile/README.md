@@ -29,9 +29,13 @@ Copier `.env.example` en `.env.local` et renseigner l'URL et la clé anonyme du 
 
 - **Authentification** (`app/connexion/`) — téléphone/OTP : demande de code via la fonction Edge `demander-code-connexion` (limite de trois demandes par heure, 5.1), vérification avec `supabase.auth.verifyOtp`, session persistante via `lib/session-provider.tsx`.
 - **Inscription livreur** (`app/inscription-livreur.tsx`) — nom complet, plaque, photos recto/verso de la pièce et selfie (via `expo-image-picker`), téléversées dans le bucket privé `pieces-identite` puis soumises à la fonction serveur `soumettre_inscription_livreur`. L'écran d'accueil (`app/accueil.tsx`) affiche le statut (en attente / validé / rejeté avec motif).
+- **Publication d'une course** (`app/publier-course.tsx`) — sélection des zones, tarif affiché en direct (lecture de la grille active), nature/description du colis, numéro du destinataire, montant de marchandise optionnel.
+- **Suivi expéditeur** (`app/mes-envois.tsx`) — liste des envois avec statut, infos du livreur une fois attribué (nom, note, nombre de livraisons), code de retrait, annulation avant acceptation.
+- **Courses disponibles** (`app/courses-disponibles.tsx`) — réservé aux livreurs validés n'ayant pas de course en cours ; liste rafraîchie en temps réel (Supabase Realtime sur `courses`) et manuellement (pull-to-refresh), acceptation.
+- **Course en cours** (`app/course-en-cours.tsx`) — coordonnées de l'expéditeur, montant à encaisser, déclaration de supplément (barème), saisie du code de retrait pour clôturer, déclaration d'échec.
 
 Navigation par [Expo Router](https://docs.expo.dev/router/introduction/).
 
-Reste à faire pour le lot 1 : écrans de publication et de suivi de course.
+Reste à faire pour le lot 1 : rien côté écrans de la boucle de base ; le lot 2 introduira l'argent réel (portefeuille, prélèvement effectif, recharge mobile money). Les notifications push (Expo Notifications + Firebase Cloud Messaging) ne sont pas encore câblées — elles nécessitent un projet Firebase, donc des identifiants que je n'ai pas ; le temps réel Supabase assure le rafraîchissement en attendant (7.2 : "le temps réel est un confort, jamais une dépendance").
 
 **Limite connue du monorepo :** `apps/mobile` épingle `react@19.2.3` (exigé par le SDK Expo) alors que `apps/backoffice` (Next.js) utilise une version plus récente, hoistée à la racine. npm conserve donc une copie locale de React dans `apps/mobile/node_modules`, ce que signale `npx expo-doctor`. C'est sans effet fonctionnel (Metro résout toujours la copie locale en priorité) ; à isoler proprement du reste du workspace npm si cela devient gênant.

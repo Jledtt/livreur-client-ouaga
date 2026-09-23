@@ -113,7 +113,7 @@ export default function InscriptionLivreur() {
           Votre compte sera examine par un administrateur avant de pouvoir accepter des courses.
         </Text>
 
-        <Text style={styles.libelleChamp}>Nom complet (comme sur la piece d'identite)</Text>
+        <Text style={styles.libelleChamp}>Nom complet (comme sur la piece d&apos;identite)</Text>
         <TextInput
           style={styles.champ}
           value={nomComplet}
@@ -121,7 +121,7 @@ export default function InscriptionLivreur() {
           editable={!envoiEnCours}
         />
 
-        <Text style={styles.libelleChamp}>Plaque d'immatriculation</Text>
+        <Text style={styles.libelleChamp}>Plaque d&apos;immatriculation</Text>
         <TextInput
           style={styles.champ}
           value={plaque}

@@ -25,7 +25,7 @@ export default function Accueil() {
 
   useEffect(() => {
     if (!session) {
-      setChargementFiche(false);
+      Promise.resolve().then(() => setChargementFiche(false));
       return;
     }
 
@@ -75,9 +75,19 @@ export default function Accueil() {
         </Pressable>
       )}
 
-      <Text style={styles.note}>
-        Ecrans a venir (lot 1) : publication d'une course, liste des courses disponibles.
-      </Text>
+      <Pressable style={styles.boutonSecondaire} onPress={() => router.push("/publier-course")}>
+        <Text style={styles.texteBoutonSecondaire}>Envoyer un colis</Text>
+      </Pressable>
+
+      <Pressable style={styles.bouton} onPress={() => router.push("/mes-envois")}>
+        <Text style={styles.texteBouton}>Mes envois</Text>
+      </Pressable>
+
+      {fiche?.statut === "valide" ? (
+        <Pressable style={styles.bouton} onPress={() => router.push("/courses-disponibles")}>
+          <Text style={styles.texteBouton}>Courses disponibles</Text>
+        </Pressable>
+      ) : null}
 
       <Pressable style={styles.bouton} onPress={() => supabase.auth.signOut()}>
         <Text style={styles.texteBouton}>Se deconnecter</Text>

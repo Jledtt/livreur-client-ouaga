@@ -75,12 +75,14 @@ Le développement suit une logique de lots : faire fonctionner la boucle métier
 
 ## Statut
 
-**Lot 0 terminé** :
+**Lot 0 terminé, lot 1 (boucle de course sans argent) fonctionnel de bout en bout** :
 
-- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, fonctions serveur transactionnelles du cycle de vie d'une course (publication, acceptation atomique, suppléments, livraison, échec/annulation avec recrédit différé, expiration à 24h, recharge), inscription livreur, validation admin, gestion des zones et de la grille tarifaire. Voir [supabase/README.md](supabase/README.md).
-- **Mobile** (`apps/mobile/`) — authentification téléphone/OTP (limite de trois demandes par heure et par numéro), inscription livreur avec dépôt des trois photos (recto/verso/selfie) dans un stockage privé. Voir [apps/mobile/README.md](apps/mobile/README.md).
-- **Back-office** (`apps/backoffice/`) — authentification admin (email/mot de passe), validation des livreurs, gestion des zones, édition de la grille tarifaire (symétrie automatique, export CSV, activation explicite). Voir [apps/backoffice/README.md](apps/backoffice/README.md).
+- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, fonctions serveur transactionnelles du cycle de vie d'une course (publication, acceptation atomique, suppléments, livraison, échec/annulation avec recrédit différé, expiration à 24h, recharge), inscription livreur, validation admin, gestion des zones et de la grille tarifaire, temps réel activé sur `courses`. Voir [supabase/README.md](supabase/README.md).
+- **Mobile** (`apps/mobile/`) — authentification téléphone/OTP, inscription livreur, **publication d'une course** avec tarif en direct, **suivi des envois** (expéditeur), **liste des courses disponibles** (temps réel + rafraîchissement manuel) et **suivi jusqu'à la clôture** par code de retrait (livreur). Voir [apps/mobile/README.md](apps/mobile/README.md).
+- **Back-office** (`apps/backoffice/`) — authentification admin, validation des livreurs, gestion des zones, édition de la grille tarifaire. Voir [apps/backoffice/README.md](apps/backoffice/README.md).
 
-Prochaine étape : **lot 1** (boucle de course sans argent — voir [docs/roadmap.md](docs/roadmap.md)), écrans mobile de publication et de suivi de course.
+Le prélèvement est déjà calculé et enregistré à chaque acceptation (fonctions du lot 0), mais non exigible tant que le portefeuille n'existe pas : c'est le principe même du découpage en lots (tester la boucle complète avant d'y introduire l'argent). **Lot 2** : portefeuille, prélèvement effectif, recharge mobile money, découvert — voir [docs/roadmap.md](docs/roadmap.md).
+
+Non câblé pour l'instant : les **notifications push** (nécessitent un projet Firebase externe) — le temps réel Supabase sert de mécanisme de rafraîchissement en attendant.
 
 Voir la section 11 du cahier des charges pour les points ouverts qui doivent être tranchés avant certains lots (liste des zones, montants de la grille tarifaire, choix des agrégateurs, etc.) — notamment l'**agrégateur SMS**, dont dépend l'envoi réel des codes de connexion et des notifications aux destinataires.
