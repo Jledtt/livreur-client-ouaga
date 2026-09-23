@@ -86,11 +86,13 @@ Tant qu'ils ne sont pas tranchés, aucune recharge ne peut aboutir automatiqueme
 
 ## Statut
 
-**Lot 0 terminé, lot 1 (boucle de course sans argent) fonctionnel de bout en bout, infrastructure du lot 2 (portefeuille) prête côté code** :
+**Lots 0 et 1 terminés ; lot 2 (portefeuille) prêt côté code ; lot 3 (destinataire et réputation) bien avancé** :
 
-- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, fonctions serveur transactionnelles du cycle de vie d'une course, inscription livreur, validation admin, gestion des zones et de la grille tarifaire, temps réel activé sur `courses`, et désormais l'infrastructure du portefeuille (ajustement admin, rapprochement manuel de recharge). Voir [supabase/README.md](supabase/README.md).
-- **Mobile** (`apps/mobile/`) — authentification téléphone/OTP, inscription livreur, publication et suivi de course, acceptation par le livreur jusqu'à la clôture, et désormais **portefeuille** (solde, historique) et **demande de recharge**. Voir [apps/mobile/README.md](apps/mobile/README.md).
-- **Back-office** (`apps/backoffice/`) — authentification admin, validation des livreurs, gestion des zones et de la grille tarifaire, et désormais **module Recharges** (rapprochement manuel). Voir [apps/backoffice/README.md](apps/backoffice/README.md).
+- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, fonctions serveur transactionnelles du cycle de vie d'une course, inscription livreur, validation admin, gestion des zones et de la grille tarifaire, temps réel activé sur `courses`, infrastructure du portefeuille, et désormais confirmation/contestation du reversement de marchandise avec suspension automatique (RG-47). Voir [supabase/README.md](supabase/README.md).
+- **Mobile** (`apps/mobile/`) — authentification téléphone/OTP, inscription livreur, publication et suivi de course, acceptation par le livreur jusqu'à la clôture, portefeuille et demande de recharge, et désormais **notation du livreur**, **confirmation/contestation de la marchandise** et **signalements** depuis l'écran de suivi des envois. Voir [apps/mobile/README.md](apps/mobile/README.md).
+- **Back-office** (`apps/backoffice/`) — authentification admin, validation des livreurs, gestion des zones et de la grille tarifaire, module Recharges (rapprochement manuel). Voir [apps/backoffice/README.md](apps/backoffice/README.md).
+
+Reste pour clore le lot 3 : le **traitement** des signalements créés (file d'attente, décision) côté back-office — prévu au lot 4 par la roadmap.
 
 Le prélèvement à l'acceptation d'une course est déjà exigible (un livreur au solde nul ou négatif ne peut pas accepter, hors découvert d'une seule course) — ce qui, en pratique, bloque toute nouvelle inscription tant qu'un administrateur ne crédite pas manuellement le compte (`ajuster_solde_livreur`) en l'absence d'agrégateur mobile money.
 

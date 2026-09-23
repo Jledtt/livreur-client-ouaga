@@ -1,27 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { useSession } from "../lib/session-provider";
+import CarteEnvoi from "../components/carte-envoi";
 import type { Course, Zone } from "../lib/types";
 
-const LIBELLES_STATUT: Record<Course["statut"], string> = {
-  publiee: "En attente d'un livreur",
-  acceptee: "Livreur en route",
-  colis_recupere: "Colis recupere, en livraison",
-  livree: "Livree",
-  annulee: "Annulee",
-  echouee: "Echouee",
-  a_verifier: "A verifier",
-};
-
 type LivreurAssigne = { nom_complet: string | null; note_moyenne: number | null; nb_livraisons: number };
+type Notation = { course_id: string; note: number; commentaire: string | null };
 
 export default function MesEnvois() {
   const { session } = useSession();
   const [zones, setZones] = useState<Record<number, string>>({});
   const [courses, setCourses] = useState<Course[]>([]);
   const [livreurs, setLivreurs] = useState<Record<string, LivreurAssigne>>({});
+  const [notations, setNotations] = useState<Record<string, Notation>>({});
   const [chargement, setChargement] = useState(true);
   const [erreurChargement, setErreurChargement] = useState(false);
 
@@ -49,19 +42,37 @@ export default function MesEnvois() {
     const listeCourses = (coursesData as Course[]) ?? [];
     setCourses(listeCourses);
 
+    const idsCourses = listeCourses.map((c) => c.id);
     const idsLivreurs = [...new Set(listeCourses.map((c) => c.livreur_id).filter(Boolean))] as string[];
-    if (idsLivreurs.length > 0) {
-      const [{ data: utilisateursData }, { data: livreursData }] = await Promise.all([
-        supabase.from("utilisateurs").select("id, nom_complet").in("id", idsLivreurs),
-        supabase.from("livreurs").select("utilisateur_id, note_moyenne, nb_livraisons").in("utilisateur_id", idsLivreurs),
-      ]);
 
+    const [reponseLivreurs, reponseNotations] = await Promise.all([
+      idsLivreurs.length > 0
+        ? Promise.all([
+            supabase.from("utilisateurs").select("id, nom_complet").in("id", idsLivreurs),
+            supabase
+              .from("livreurs")
+              .select("utilisateur_id, note_moyenne, nb_livraisons")
+              .in("utilisateur_id", idsLivreurs),
+          ])
+        : null,
+      idsCourses.length > 0
+        ? supabase.from("notations").select("course_id, note, commentaire").in("course_id", idsCourses)
+        : null,
+    ]);
+
+    if (reponseLivreurs) {
+      const [{ data: utilisateursData }, { data: livreursData }] = reponseLivreurs;
       const noms = Object.fromEntries(
-        ((utilisateursData as { id: string; nom_complet: string | null }[]) ?? []).map((u) => [u.id, u.nom_complet]),
+        ((utilisateursData as { id: string; nom_complet: string | null }[]) ?? []).map((u) => [
+          u.id,
+          u.nom_complet,
+        ]),
       );
 
       const infos: Record<string, LivreurAssigne> = {};
-      for (const l of (livreursData as { utilisateur_id: string; note_moyenne: number | null; nb_livraisons: number }[]) ?? []) {
+      for (const l of (livreursData as
+        | { utilisateur_id: string; note_moyenne: number | null; nb_livraisons: number }[]
+        | null) ?? []) {
         infos[l.utilisateur_id] = {
           nom_complet: noms[l.utilisateur_id] ?? null,
           note_moyenne: l.note_moyenne,
@@ -71,21 +82,19 @@ export default function MesEnvois() {
       setLivreurs(infos);
     }
 
+    if (reponseNotations) {
+      const { data: notationsData } = reponseNotations;
+      setNotations(
+        Object.fromEntries(((notationsData as Notation[]) ?? []).map((n) => [n.course_id, n])),
+      );
+    }
+
     setChargement(false);
   }, [session]);
 
   useEffect(() => {
     Promise.resolve().then(() => charger());
   }, [charger]);
-
-  async function annuler(courseId: string) {
-    const { error } = await supabase.rpc("annuler_course", { p_course_id: courseId });
-    if (error) {
-      Alert.alert("Erreur", "Impossible d'annuler cette course.");
-      return;
-    }
-    charger();
-  }
 
   return (
     <View style={styles.conteneur}>
@@ -114,38 +123,16 @@ export default function MesEnvois() {
             <Text style={styles.vide}>Aucun envoi pour le moment.</Text>
           ) : null
         }
-        renderItem={({ item }) => {
-          const livreur = item.livreur_id ? livreurs[item.livreur_id] : null;
-          return (
-            <View style={styles.carte}>
-              <View style={styles.carteEntete}>
-                <Text style={styles.trajet}>
-                  {zones[item.zone_depart_id] ?? "?"} → {zones[item.zone_arrivee_id] ?? "?"}
-                </Text>
-                <Text style={styles.tarif}>{item.tarif.toLocaleString("fr-FR")} FCFA</Text>
-              </View>
-              <Text style={styles.statut}>{LIBELLES_STATUT[item.statut]}</Text>
-
-              {livreur ? (
-                <Text style={styles.livreurInfo}>
-                  Livreur : {livreur.nom_complet ?? "?"}
-                  {livreur.note_moyenne ? ` · ${livreur.note_moyenne}/5` : ""} ·{" "}
-                  {livreur.nb_livraisons} livraison{livreur.nb_livraisons > 1 ? "s" : ""}
-                </Text>
-              ) : null}
-
-              {item.code_retrait ? (
-                <Text style={styles.code}>Code de retrait : {item.code_retrait}</Text>
-              ) : null}
-
-              {item.statut === "publiee" ? (
-                <Pressable onPress={() => annuler(item.id)}>
-                  <Text style={styles.lienAnnuler}>Annuler cet envoi</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          );
-        }}
+        renderItem={({ item }) => (
+          <CarteEnvoi
+            course={item}
+            zoneDepart={zones[item.zone_depart_id] ?? "?"}
+            zoneArrivee={zones[item.zone_arrivee_id] ?? "?"}
+            livreur={item.livreur_id ? livreurs[item.livreur_id] ?? null : null}
+            notation={notations[item.id] ?? null}
+            onChange={charger}
+          />
+        )}
       />
     </View>
   );
@@ -165,18 +152,4 @@ const styles = StyleSheet.create({
   liste: { paddingHorizontal: 24, paddingBottom: 40, gap: 12 },
   vide: { textAlign: "center", color: "#999", marginTop: 40 },
   erreurChargement: { color: "#B3261E", fontSize: 13, paddingHorizontal: 24, marginBottom: 12 },
-  carte: {
-    borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 10,
-    padding: 14,
-    gap: 4,
-  },
-  carteEntete: { flexDirection: "row", justifyContent: "space-between" },
-  trajet: { fontSize: 15, fontWeight: "600" },
-  tarif: { fontSize: 15, fontWeight: "600", color: "#0F4C5C" },
-  statut: { fontSize: 13, color: "#555" },
-  livreurInfo: { fontSize: 13, color: "#555" },
-  code: { fontSize: 14, fontWeight: "600", marginTop: 4 },
-  lienAnnuler: { fontSize: 13, color: "#B3261E", marginTop: 6 },
 });

@@ -36,6 +36,8 @@ Le découpage suit une logique simple : faire fonctionner la boucle métier comp
 - Notation après course, calcul de la moyenne, compteur de livraisons.
 - Encaissement de marchandise et confirmation de reversement par l'expéditeur.
 
+> **Statut :** notation, confirmation/contestation du reversement de marchandise (avec suspension automatique du livreur sur contestation, RG-47) et création de signalement implémentés côté code et écran mobile. Le journal des SMS s'écrit déjà à chaque envoi (`journal_sms`), mais l'envoi réel et la **réception des réponses entrantes du destinataire** restent bloqués par le même point ouvert que le SMS de connexion : l'agrégateur SMS couvrant le Burkina Faso n'est pas choisi (section 7.6/11). Le **traitement** des signalements créés (file d'attente, décision, levée de suspension) reste au back-office, prévu au lot 4.
+
 ## Lot 4 — Durcissement avant pilote
 
 - Suppléments et barème.

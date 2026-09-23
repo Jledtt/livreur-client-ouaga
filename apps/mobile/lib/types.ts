@@ -25,6 +25,7 @@ export type Course = {
   code_retrait: string | null;
   statut: StatutCourse;
   motif_echec: string | null;
+  marchandise_confirmee: boolean | null;
   publiee_le: string;
   acceptee_le: string | null;
   livree_le: string | null;
