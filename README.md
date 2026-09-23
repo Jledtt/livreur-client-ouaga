@@ -75,6 +75,12 @@ Le développement suit une logique de lots : faire fonctionner la boucle métier
 
 ## Statut
 
-Lot 0 amorcé : squelette Expo (`apps/mobile`), squelette Next.js (`apps/backoffice`) et schéma de base de données initial avec politiques RLS (`supabase/migrations/`) couvrant les tables de la section 6 du cahier des charges. Restent à implémenter : authentification téléphone/OTP, fonctions serveur transactionnelles (acceptation de course, prélèvement), et les écrans des parcours fonctionnels (section 4).
+Lot 0 bien avancé :
 
-Voir la section 11 du cahier des charges pour les points ouverts qui doivent être tranchés avant certains lots (liste des zones, montants de la grille tarifaire, choix des agrégateurs, etc.).
+- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, et les fonctions serveur transactionnelles du cycle de vie d'une course (publication, acceptation atomique, suppléments, livraison, échec/annulation avec recrédit différé, expiration à 24h, recharge). Voir [supabase/README.md](supabase/README.md).
+- **Authentification** (`apps/mobile/app/connexion/`) — téléphone + code à usage unique, avec limitation à trois demandes par heure et par numéro via une fonction Edge dédiée, session persistante longue.
+- **Back-office** (`apps/backoffice/`) — squelette Next.js prêt, modules d'administration à implémenter.
+
+Restent à faire pour terminer le lot 0 : inscription livreur avec dépôt des pièces, back-office de validation, gestion des zones/grille tarifaire côté admin.
+
+Voir la section 11 du cahier des charges pour les points ouverts qui doivent être tranchés avant certains lots (liste des zones, montants de la grille tarifaire, choix des agrégateurs, etc.) — notamment l'**agrégateur SMS**, dont dépend l'envoi réel des codes de connexion et des notifications aux destinataires.

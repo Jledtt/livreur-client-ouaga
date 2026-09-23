@@ -28,10 +28,16 @@ Pour lier ce dossier à un projet Supabase distant : `npx supabase link --projec
 
 ## Statut
 
-La migration [`20260923012927_schema_initial.sql`](migrations/20260923012927_schema_initial.sql) couvre les tables de la section 6.2 du cahier des charges (`utilisateurs`, `livreurs`, `courses`, `mouvements_credit`, `zones`, `grilles`, `grille_tarifs`, `recharges`, `supplements`, `bareme_supplements`, `notations`, `signalements`, `journal_sms`, `journal_admin`), les contraintes qui en découlent (RG-24, RG-43, etc.) et les politiques RLS de lecture de base.
+- [`20260923012927_schema_initial.sql`](migrations/20260923012927_schema_initial.sql) — tables de la section 6.2 du cahier des charges, contraintes (RG-24, RG-43, etc.) et politiques RLS de lecture de base.
+- [`20260923013411_fonctions_courses.sql`](migrations/20260923013411_fonctions_courses.sql) — cycle de vie complet d'une course en fonctions `security definer` (jamais d'écriture directe côté client) : `publier_course` (calcul tarif + prélèvement, RG-01 à RG-05), `accepter_course` (transaction unique : solde, débit, code de retrait, RG-13 à RG-19/RG-22/RG-23), `recuperer_colis`, `declarer_supplement` (RG-39 à RG-41), `livrer_course` (vérification du code, limite d'essais, RG-25/5.5), `declarer_echec_course` et `annuler_course` (recrédit différé de 72h, RG-30/RG-32), `verifier_courses_expirees` (RG-27, planifiée via `pg_cron` si disponible), `initier_recharge`/`confirmer_recharge` (RG-18, cette dernière réservée au `service_role`).
+- [`20260923013412_auth_otp_rate_limit.sql`](migrations/20260923013412_auth_otp_rate_limit.sql) — limite de trois demandes de code par numéro et par heure (5.1), appelée par la fonction Edge `demander-code-connexion`.
 
-Reste à écrire, en fonctions serveur `security definer` (jamais côté client) :
-- l'acceptation atomique d'une course (RG-22, RG-23, RG-13) ;
-- le calcul du tarif et du prélèvement à la publication (RG-01, RG-06) ;
-- le recrédit différé de 72 heures après échec (RG-32) ;
-- l'apurement automatique du découvert à la recharge (RG-18).
+Reste à écrire : back-office de validation des livreurs, notation, signalements (traitement), tableau de bord.
+
+## Fonctions Edge
+
+`functions/demander-code-connexion/` est le point d'entrée unique que le mobile appelle pour demander un code de connexion (jamais `supabase.auth.signInWithOtp()` directement) : il applique la limite de trois demandes par heure et par numéro avant de déclencher l'envoi réel. L'envoi effectif dépend d'un fournisseur SMS à configurer dans `config.toml` ([auth.sms]) — l'agrégateur couvrant le Burkina Faso reste un point ouvert (section 7.6/11 du cahier des charges) ; en local, seuls les numéros listés dans `[auth.sms.test_otp]` fonctionnent.
+
+```bash
+npx supabase functions serve demander-code-connexion
+```

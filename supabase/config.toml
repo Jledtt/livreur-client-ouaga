@@ -153,6 +153,10 @@ max_indexes = 5
 
 [auth]
 enabled = true
+# Le destinataire n'a pas de compte (1.2) : seuls le livreur et l'expediteur
+# s'authentifient, tous deux par telephone + code a usage unique, sans mot
+# de passe. "Session persistante longue : un livreur ne doit pas avoir a se
+# reconnecter chaque jour" (5.1) -- ne pas activer [auth.sessions].timebox.
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
 site_url = "http://127.0.0.1:3000"
@@ -254,18 +258,20 @@ otp_expiry = 3600
 # content_path = "./supabase/templates/password_changed_notification.html"
 
 [auth.sms]
-# Allow/disallow new user signups via SMS to your project.
-enable_signup = false
-# If enabled, users need to confirm their phone number before signing in.
+# Seul mode d'authentification de l'application (pas de mot de passe, 5.1).
+enable_signup = true
 enable_confirmations = false
-# Template for sending OTP to users
-template = "Your code is {{ .Code }}"
-# Controls the minimum amount of time that must pass before sending another sms otp.
+# Gabarit ASCII strict (alphabet GSM-7 sans accent, voir 4.4).
+template = "Code de connexion : {{ .Code }}"
+# Delai minimal entre deux envois pour un meme numero. La limite metier
+# stricte (3 demandes par numero et par heure, 5.1) est appliquee en amont
+# par la fonction Edge demander-code-connexion, pas ici.
 max_frequency = "5s"
 
-# Use pre-defined map of phone number to OTP for testing.
-# [auth.sms.test_otp]
-# 4152127777 = "123456"
+# Numeros de test en developpement local uniquement (aucun SMS reel envoye).
+# A supprimer avant tout environnement de staging ou de production.
+[auth.sms.test_otp]
+"+22670000000" = "123456"
 
 # Configure logged in session timeouts.
 # [auth.sessions]
@@ -284,7 +290,12 @@ max_frequency = "5s"
 # enabled = true
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
-# Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# Agregateur SMS couvrant le Burkina Faso : encore a contractualiser (point
+# ouvert, section 7.6/11 du cahier des charges). En attendant, seuls les
+# numeros de auth.sms.test_otp ci-dessus fonctionnent en local. A defaut
+# d'un des fournisseurs geres nativement ci-dessous, un "Send SMS Hook"
+# (auth.hook.send_sms) permettra d'encapsuler un agregateur local derriere
+# une fonction unique, conformement au principe de reversibilite de 7.3.
 [auth.sms.twilio]
 enabled = false
 account_sid = ""
@@ -369,6 +380,11 @@ enabled = false
 authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
+
+[functions.demander-code-connexion]
+# Pas de JWT a ce stade : c'est justement l'appel qui declenche l'envoi du
+# code permettant ensuite de s'authentifier (voir section 5.1).
+verify_jwt = false
 
 [edge_runtime]
 enabled = true
