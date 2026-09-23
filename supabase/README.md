@@ -32,8 +32,9 @@ Pour lier ce dossier à un projet Supabase distant : `npx supabase link --projec
 - [`20260923013411_fonctions_courses.sql`](migrations/20260923013411_fonctions_courses.sql) — cycle de vie complet d'une course en fonctions `security definer` (jamais d'écriture directe côté client) : `publier_course` (calcul tarif + prélèvement, RG-01 à RG-05), `accepter_course` (transaction unique : solde, débit, code de retrait, RG-13 à RG-19/RG-22/RG-23), `recuperer_colis`, `declarer_supplement` (RG-39 à RG-41), `livrer_course` (vérification du code, limite d'essais, RG-25/5.5), `declarer_echec_course` et `annuler_course` (recrédit différé de 72h, RG-30/RG-32), `verifier_courses_expirees` (RG-27, planifiée via `pg_cron` si disponible), `initier_recharge`/`confirmer_recharge` (RG-18, cette dernière réservée au `service_role`).
 - [`20260923013412_auth_otp_rate_limit.sql`](migrations/20260923013412_auth_otp_rate_limit.sql) — limite de trois demandes de code par numéro et par heure (5.1), appelée par la fonction Edge `demander-code-connexion`.
 - [`20260923152143_inscription_livreur_admin.sql`](migrations/20260923152143_inscription_livreur_admin.sql) — table `administrateurs` (accès back-office, distinct du parcours téléphone/OTP), bucket de stockage privé `pieces-identite` avec policies scopées par dossier utilisateur, `soumettre_inscription_livreur` (parcours 4.5), `valider_livreur`/`rejeter_livreur` (réservées aux administrateurs, journalisées dans `journal_admin`).
+- [`20260923161514_zones_grille_tarifaire.sql`](migrations/20260923161514_zones_grille_tarifaire.sql) — `creer_zone`/`definir_statut_zone`, `creer_grille_brouillon` (avec copie optionnelle d'une grille existante), `definir_tarif` (symétrique par défaut, RG-05), `activer_grille` (archive l'ancienne grille active dans la même transaction, RG-02). Réservées aux administrateurs.
 
-Reste à écrire : grille tarifaire (admin), notation, signalements (traitement), tableau de bord.
+Reste à écrire : notation, signalements (traitement), tableau de bord.
 
 ## Fonctions Edge
 
