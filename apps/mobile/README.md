@@ -11,10 +11,16 @@ Application Expo (React Native) — base de code unique pour les deux rôles (li
 
 Détails complets en section 1.4 et 8 du [cahier des charges](../../docs/cahier-des-charges-livraison-burkina.pdf).
 
-## À initialiser (Lot 0)
+## Démarrage
 
 ```bash
-npx create-expo-app@latest . 
+cd apps/mobile
+npm install
+npx expo start
 ```
 
-Ce dossier est un placeholder en attendant l'amorçage du projet Expo (lot 0 de la [roadmap](../../docs/roadmap.md)).
+Voir `AGENTS.md` dans ce dossier pour les conventions Expo/React Native à jour (Expo Router, EAS, etc.).
+
+## Statut
+
+Squelette Expo (blank TypeScript) généré. Reste à faire pour le [lot 0](../../docs/roadmap.md#lot-0--fondations) : authentification par téléphone/OTP, écran d'inscription livreur avec dépôt des pièces, connexion à Supabase.

@@ -13,10 +13,14 @@ Application Next.js séparée pour l'administration de la plateforme. Ce n'est p
 - Barème des suppléments.
 - Tableau de bord (courses du jour, taux d'acceptation, courses sans preneur, échecs, volume de prélèvement).
 
-## À initialiser (Lot 0)
+## Démarrage
 
 ```bash
-npx create-next-app@latest .
+cd apps/backoffice
+npm install
+npm run dev
 ```
 
-Ce dossier est un placeholder en attendant l'amorçage du projet Next.js (lot 0 de la [roadmap](../../docs/roadmap.md)).
+## Statut
+
+Squelette Next.js généré (App Router, TypeScript, Tailwind CSS, ESLint). Reste à faire pour le [lot 0](../../docs/roadmap.md#lot-0--fondations) : connexion à Supabase, authentification admin, module de validation des livreurs.

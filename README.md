@@ -45,15 +45,28 @@ Détails et justifications dans la section 7 du cahier des charges.
 ```
 .
 ├── apps/
-│   ├── mobile/        # Application Expo (React Native) — livreurs et expéditeurs
-│   └── backoffice/     # Application Next.js — administration
+│   ├── mobile/          # Application Expo (React Native, TypeScript) — livreurs et expéditeurs
+│   └── backoffice/      # Application Next.js (App Router, TypeScript, Tailwind) — administration
 ├── supabase/
-│   ├── migrations/     # Migrations SQL du schéma (voir section 6 du cahier des charges)
-│   └── policies/       # Politiques de sécurité au niveau des lignes (RLS)
+│   ├── config.toml      # Configuration du projet Supabase local
+│   └── migrations/      # Migrations SQL (schéma, contraintes, policies RLS)
 └── docs/
     ├── cahier-des-charges-livraison-burkina.pdf
     ├── regles-de-gestion.md
     └── roadmap.md
+```
+
+## Démarrage rapide
+
+```bash
+# Mobile (Expo)
+cd apps/mobile && npm install && npx expo start
+
+# Back-office (Next.js)
+cd apps/backoffice && npm install && npm run dev
+
+# Base de données locale (nécessite Docker)
+cd supabase && npx supabase start
 ```
 
 ## Découpage du développement
@@ -62,4 +75,6 @@ Le développement suit une logique de lots : faire fonctionner la boucle métier
 
 ## Statut
 
-Base de travail — voir la section 11 du cahier des charges pour les points ouverts qui doivent être tranchés avant certains lots (liste des zones, montants de la grille tarifaire, choix des agrégateurs, etc.).
+Lot 0 amorcé : squelette Expo (`apps/mobile`), squelette Next.js (`apps/backoffice`) et schéma de base de données initial avec politiques RLS (`supabase/migrations/`) couvrant les tables de la section 6 du cahier des charges. Restent à implémenter : authentification téléphone/OTP, fonctions serveur transactionnelles (acceptation de course, prélèvement), et les écrans des parcours fonctionnels (section 4).
+
+Voir la section 11 du cahier des charges pour les points ouverts qui doivent être tranchés avant certains lots (liste des zones, montants de la grille tarifaire, choix des agrégateurs, etc.).
