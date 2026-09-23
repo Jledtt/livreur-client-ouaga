@@ -23,12 +23,14 @@ export default function MesEnvois() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [livreurs, setLivreurs] = useState<Record<string, LivreurAssigne>>({});
   const [chargement, setChargement] = useState(true);
+  const [erreurChargement, setErreurChargement] = useState(false);
 
   const charger = useCallback(async () => {
     if (!session) return;
     setChargement(true);
+    setErreurChargement(false);
 
-    const [{ data: zonesData }, { data: coursesData }] = await Promise.all([
+    const [{ data: zonesData }, { data: coursesData, error: erreurCourses }] = await Promise.all([
       supabase.from("zones").select("id, nom"),
       supabase
         .from("courses")
@@ -36,6 +38,12 @@ export default function MesEnvois() {
         .eq("expediteur_id", session.user.id)
         .order("publiee_le", { ascending: false }),
     ]);
+
+    if (erreurCourses) {
+      setErreurChargement(true);
+      setChargement(false);
+      return;
+    }
 
     setZones(Object.fromEntries(((zonesData as Zone[]) ?? []).map((z) => [z.id, z.nom])));
     const listeCourses = (coursesData as Course[]) ?? [];
@@ -88,13 +96,23 @@ export default function MesEnvois() {
         </Pressable>
       </View>
 
+      {erreurChargement ? (
+        <Pressable onPress={charger}>
+          <Text style={styles.erreurChargement}>
+            Impossible de charger vos envois. Toucher pour reessayer.
+          </Text>
+        </Pressable>
+      ) : null}
+
       <FlatList
         data={courses}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={chargement} onRefresh={charger} />}
         contentContainerStyle={styles.liste}
         ListEmptyComponent={
-          !chargement ? <Text style={styles.vide}>Aucun envoi pour le moment.</Text> : null
+          !chargement && !erreurChargement ? (
+            <Text style={styles.vide}>Aucun envoi pour le moment.</Text>
+          ) : null
         }
         renderItem={({ item }) => {
           const livreur = item.livreur_id ? livreurs[item.livreur_id] : null;
@@ -146,6 +164,7 @@ const styles = StyleSheet.create({
   lienNouveau: { color: "#0F4C5C", fontWeight: "600" },
   liste: { paddingHorizontal: 24, paddingBottom: 40, gap: 12 },
   vide: { textAlign: "center", color: "#999", marginTop: 40 },
+  erreurChargement: { color: "#B3261E", fontSize: 13, paddingHorizontal: 24, marginBottom: 12 },
   carte: {
     borderWidth: 1,
     borderColor: "#eee",

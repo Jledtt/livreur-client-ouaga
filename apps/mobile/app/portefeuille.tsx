@@ -32,7 +32,13 @@ export default function Portefeuille() {
     if (!session) return;
     setChargement(true);
 
-    const [{ data: soldeData }, { data: mouvementsData }] = await Promise.all([
+    const maintenant = new Date().toISOString();
+
+    // Le montant "en attente" est calcule sur tous les mouvements futurs,
+    // pas seulement sur les 50 derniers de l'historique affiche : un livreur
+    // tres actif pourrait sinon faire sortir un recredit encore du a
+    // echeance de cette fenetre.
+    const [{ data: soldeData }, { data: mouvementsData }, { data: enAttenteData }] = await Promise.all([
       supabase.from("soldes_livreurs").select("solde_disponible").maybeSingle(),
       supabase
         .from("mouvements_credit")
@@ -40,18 +46,18 @@ export default function Portefeuille() {
         .eq("livreur_id", session.user.id)
         .order("cree_le", { ascending: false })
         .limit(50),
+      supabase
+        .from("mouvements_credit")
+        .select("montant")
+        .eq("livreur_id", session.user.id)
+        .gt("date_effet", maintenant),
     ]);
 
     setSolde(soldeData?.solde_disponible ?? 0);
-
-    const tousMouvements = (mouvementsData as Mouvement[]) ?? [];
-    const maintenant = new Date();
-    const montantsEnAttente = tousMouvements
-      .filter((m) => new Date(m.date_effet) > maintenant)
-      .reduce((total, m) => total + m.montant, 0);
-
-    setEnAttente(montantsEnAttente);
-    setMouvements(tousMouvements);
+    setMouvements((mouvementsData as Mouvement[]) ?? []);
+    setEnAttente(
+      ((enAttenteData as { montant: number }[]) ?? []).reduce((total, m) => total + m.montant, 0),
+    );
     setChargement(false);
   }, [session]);
 

@@ -29,30 +29,34 @@ Deno.serve(async (req) => {
     return jsonResponse({ erreur: "Methode non autorisee" }, 405);
   }
 
-  let telephone: string | undefined;
+  let corps: Record<string, unknown>;
   try {
-    ({ telephone } = await req.json());
+    corps = await req.json();
   } catch {
     return jsonResponse({ erreur: "Corps de requete invalide" }, 400);
   }
 
-  if (!telephone) {
+  if (typeof corps.telephone !== "string" || corps.telephone.length === 0) {
     return jsonResponse({ erreur: "Le numero de telephone est requis" }, 400);
   }
 
-  const telephoneNormalise = normaliserTelephoneBurkina(telephone);
+  const telephoneNormalise = normaliserTelephoneBurkina(corps.telephone);
   if (!telephoneNormalise) {
     return jsonResponse({ erreur: "Numero de telephone burkinabe invalide" }, 400);
   }
 
   const client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  const { data: autorise, error: erreurVerif } = await client.rpc("peut_demander_otp", {
+  // Verification et enregistrement de la demande en un seul appel atomique
+  // (verrou consultatif cote SQL) : deux requetes concurrentes pour le meme
+  // numero ne peuvent plus toutes les deux passer la limite de trois par
+  // heure (voir le commentaire de demander_otp dans la migration).
+  const { data: autorise, error: erreurLimite } = await client.rpc("demander_otp", {
     p_telephone: telephoneNormalise,
   });
 
-  if (erreurVerif) {
-    console.error("Erreur peut_demander_otp:", erreurVerif);
+  if (erreurLimite) {
+    console.error("Erreur demander_otp:", erreurLimite);
     return jsonResponse({ erreur: "Erreur serveur" }, 500);
   }
 
@@ -61,14 +65,6 @@ Deno.serve(async (req) => {
       { erreur: "Trop de demandes pour ce numero. Reessayez dans une heure." },
       429,
     );
-  }
-
-  const { error: erreurEnregistrement } = await client.rpc("enregistrer_demande_otp", {
-    p_telephone: telephoneNormalise,
-  });
-  if (erreurEnregistrement) {
-    console.error("Erreur enregistrer_demande_otp:", erreurEnregistrement);
-    return jsonResponse({ erreur: "Erreur serveur" }, 500);
   }
 
   // L'envoi effectif du SMS depend du fournisseur configure dans

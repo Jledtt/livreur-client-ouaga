@@ -103,6 +103,44 @@ end;
 $$;
 
 -- ============================================================================
+-- lister_courses_disponibles -- 5.4, complement de courses_select_livreur
+-- ============================================================================
+
+-- Seul chemin par lequel un livreur peut parcourir les courses 'publiee'
+-- avant de les accepter. Ne renvoie que les colonnes necessaires a cet
+-- ecran : ni tel_destinataire, ni expediteur_id, ni code_retrait (7.5).
+create or replace function lister_courses_disponibles()
+returns table (
+  id uuid,
+  zone_depart_id integer,
+  zone_arrivee_id integer,
+  tarif integer,
+  nature_colis text,
+  description_colis text,
+  montant_marchandise integer,
+  publiee_le timestamptz
+)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select c.id, c.zone_depart_id, c.zone_arrivee_id, c.tarif, c.nature_colis,
+         c.description_colis, c.montant_marchandise, c.publiee_le
+  from courses c
+  where c.statut = 'publiee'
+    and exists (
+      select 1 from livreurs
+      where livreurs.utilisateur_id = auth.uid()
+        and livreurs.statut = 'valide'
+    )
+  order by c.publiee_le;
+$$;
+
+revoke execute on function lister_courses_disponibles() from public;
+grant execute on function lister_courses_disponibles() to authenticated;
+
+-- ============================================================================
 -- accepter_course -- RG-13 a RG-19, RG-22, RG-23, RG-26
 -- ============================================================================
 
@@ -235,8 +273,12 @@ begin
     raise exception 'Course introuvable ou non eligible' using errcode = 'P0001';
   end if;
 
-  insert into supplements (course_id, motif, montant)
-  values (p_course_id, p_motif, v_montant);
+  begin
+    insert into supplements (course_id, motif, montant)
+    values (p_course_id, p_motif, v_montant);
+  exception when unique_violation then
+    raise exception 'Ce supplement a deja ete declare pour cette course' using errcode = 'P0001';
+  end;
 
   insert into mouvements_credit (livreur_id, type, montant, course_id)
   values (v_course.livreur_id, 'frais_notification', -v_frais_notification, p_course_id);
@@ -291,6 +333,13 @@ begin
     return v_course;
   end if;
 
+  -- Code incorrect : on ne leve surtout pas d'exception ici. Une exception
+  -- annulerait toute la transaction de cet appel, y compris l'incrementation
+  -- de nb_essais_code et l'ecriture dans journal_admin ci-dessous -- ce qui
+  -- rendait le garde-fou "5 essais" totalement inoperant (le compteur
+  -- revenait a zero a chaque appel). La fonction retourne donc normalement
+  -- la course mise a jour ; c'est au client de comparer son statut pour
+  -- distinguer succes, echec simple et bascule en a_verifier.
   update courses
   set nb_essais_code = nb_essais_code + 1,
       statut = case when nb_essais_code + 1 >= v_seuil_essais then 'a_verifier' else statut end
@@ -302,7 +351,7 @@ begin
          'Code incorrect, essai ' || v_course.nb_essais_code
   where v_course.statut = 'a_verifier';
 
-  raise exception 'Code de retrait incorrect' using errcode = 'P0001';
+  return v_course;
 end;
 $$;
 
@@ -448,9 +497,15 @@ set search_path = public
 as $$
 declare
   v_recharge recharges;
+  v_statut statut_livreur;
 begin
   if auth.uid() is null then
     raise exception 'Authentification requise' using errcode = '28000';
+  end if;
+
+  select statut into v_statut from livreurs where utilisateur_id = auth.uid();
+  if v_statut = 'suspendu' then
+    raise exception 'Un compte suspendu ne peut plus recharger' using errcode = 'P0001';
   end if;
 
   insert into recharges (livreur_id, montant, operateur)
@@ -506,6 +561,8 @@ comment on function confirmer_recharge is
 -- Droits d'execution
 -- ============================================================================
 
+revoke execute on function calculer_prelevement(integer) from public;
+revoke execute on function generer_code_retrait() from public;
 revoke execute on function publier_course(integer, integer, text, text, text, integer) from public;
 revoke execute on function accepter_course(uuid) from public;
 revoke execute on function recuperer_colis(uuid) from public;

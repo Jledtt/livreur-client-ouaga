@@ -22,6 +22,7 @@ export default function Accueil() {
   const { session, chargement } = useSession();
   const [fiche, setFiche] = useState<FicheLivreur>(null);
   const [chargementFiche, setChargementFiche] = useState(true);
+  const [erreurFiche, setErreurFiche] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -29,15 +30,28 @@ export default function Accueil() {
       return;
     }
 
+    let annule = false;
+
     supabase
       .from("livreurs")
       .select("statut, motif_statut")
       .eq("utilisateur_id", session.user.id)
       .maybeSingle()
-      .then(({ data }) => {
-        setFiche(data as FicheLivreur);
+      .then(({ data, error }) => {
+        // Protege contre une reponse tardive apres un changement de
+        // session (deconnexion/reconnexion rapide sur le meme appareil).
+        if (annule) return;
+        if (error) {
+          setErreurFiche(true);
+        } else {
+          setFiche(data as FicheLivreur);
+        }
         setChargementFiche(false);
       });
+
+    return () => {
+      annule = true;
+    };
   }, [session]);
 
   if (!chargement && !session) {
@@ -51,6 +65,10 @@ export default function Accueil() {
 
       {chargementFiche ? (
         <ActivityIndicator style={{ marginTop: 16 }} />
+      ) : erreurFiche ? (
+        <View style={styles.blocStatut}>
+          <Text style={styles.motif}>Impossible de charger votre statut. Verifiez votre connexion.</Text>
+        </View>
       ) : fiche ? (
         <View style={styles.blocStatut}>
           <Text style={styles.texteStatut}>{LIBELLES_STATUT[fiche.statut]}</Text>

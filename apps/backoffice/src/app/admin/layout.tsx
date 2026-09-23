@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { creerClientServeur } from "@/lib/supabase/server";
+import { verifierAdministrateurConnecte } from "@/lib/supabase/server";
 import DeconnexionBouton from "./deconnexion-bouton";
 
 const LIENS_NAV = [
@@ -12,23 +12,9 @@ const LIENS_NAV = [
 ];
 
 export default async function LayoutAdmin({ children }: { children: ReactNode }) {
-  const supabase = await creerClientServeur();
+  const session = await verifierAdministrateurConnecte();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/connexion");
-  }
-
-  const { data: administrateur } = await supabase
-    .from("administrateurs")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!administrateur) {
+  if (!session) {
     redirect("/connexion");
   }
 

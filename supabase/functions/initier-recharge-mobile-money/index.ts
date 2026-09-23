@@ -22,6 +22,7 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const OPERATEURS_VALIDES = ["orange_money", "moov_money"] as const;
 const MONTANT_MINIMUM = 500; // RG-20
+const MONTANT_MAXIMUM = 500_000; // Garde-fou raisonnable ; aucune borne metier fixee par le cahier des charges.
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -45,9 +46,14 @@ Deno.serve(async (req) => {
     return jsonResponse({ erreur: "Corps de requete invalide" }, 400);
   }
 
-  if (!montant || !Number.isInteger(montant) || montant < MONTANT_MINIMUM) {
+  if (
+    !montant ||
+    !Number.isInteger(montant) ||
+    montant < MONTANT_MINIMUM ||
+    montant > MONTANT_MAXIMUM
+  ) {
     return jsonResponse(
-      { erreur: `Le montant minimum de recharge est de ${MONTANT_MINIMUM} FCFA` },
+      { erreur: `Le montant doit etre compris entre ${MONTANT_MINIMUM} et ${MONTANT_MAXIMUM} FCFA` },
       400,
     );
   }

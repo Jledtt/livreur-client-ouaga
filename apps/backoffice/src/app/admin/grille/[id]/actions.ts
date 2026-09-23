@@ -17,6 +17,7 @@ export async function definirTarifsAction(formData: FormData) {
   }
 
   const supabase = await creerClientServeur();
+  const erreurs: string[] = [];
 
   for (const zoneArriveeId of zoneArriveeIds.split(",").filter(Boolean)) {
     const montantBrut = formData.get(`montant_${zoneArriveeId}`);
@@ -34,9 +35,16 @@ export async function definirTarifsAction(formData: FormData) {
     });
 
     if (error) {
-      console.error("Erreur definir_tarif:", error);
+      erreurs.push(`zone ${zoneArriveeId} : ${error.message}`);
     }
   }
 
   revalidatePath(`/admin/grille/${grilleId}`);
+
+  // Chaque cellule est independante (definir_tarif est idempotente), donc on
+  // essaie toutes les zones plutot que de s'arreter a la premiere erreur --
+  // mais on ne doit pas laisser l'echec passer inapercu pour autant.
+  if (erreurs.length > 0) {
+    throw new Error(`Certains tarifs n'ont pas ete enregistres : ${erreurs.join(" ; ")}`);
+  }
 }

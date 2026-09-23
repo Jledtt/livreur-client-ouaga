@@ -28,22 +28,29 @@ export default function PublierCourse() {
 
   const [publicationEnCours, setPublicationEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [erreurChargement, setErreurChargement] = useState(false);
+  const [tentativeChargement, setTentativeChargement] = useState(0);
 
   useEffect(() => {
-    supabase
-      .from("zones")
-      .select("id, nom")
-      .eq("actif", true)
-      .order("nom")
-      .then(({ data }) => setZones((data as Zone[]) ?? []));
+    let annule = false;
 
-    supabase
-      .from("grilles")
-      .select("id")
-      .eq("etat", "active")
-      .maybeSingle()
-      .then(({ data }) => setGrilleActiveId(data?.id ?? null));
-  }, []);
+    Promise.all([
+      supabase.from("zones").select("id, nom").eq("actif", true).order("nom"),
+      supabase.from("grilles").select("id").eq("etat", "active").maybeSingle(),
+    ]).then(([reponseZones, reponseGrille]) => {
+      if (annule) return;
+      if (reponseZones.error || reponseGrille.error) {
+        setErreurChargement(true);
+        return;
+      }
+      setZones((reponseZones.data as Zone[]) ?? []);
+      setGrilleActiveId(reponseGrille.data?.id ?? null);
+    });
+
+    return () => {
+      annule = true;
+    };
+  }, [tentativeChargement]);
 
   const paireZones = zoneDepartId && zoneArriveeId ? `${zoneDepartId}-${zoneArriveeId}` : null;
   const [tarifResolu, setTarifResolu] = useState<{ paire: string; montant: number | null } | null>(
@@ -88,6 +95,12 @@ export default function PublierCourse() {
       return;
     }
 
+    const montantMarchandiseNombre = montantMarchandise.trim() ? Number(montantMarchandise) : 0;
+    if (!Number.isFinite(montantMarchandiseNombre) || montantMarchandiseNombre < 0) {
+      setErreur("Le montant de marchandise est invalide.");
+      return;
+    }
+
     setErreur(null);
     setPublicationEnCours(true);
 
@@ -97,7 +110,7 @@ export default function PublierCourse() {
       p_description_colis: descriptionColis.trim() || null,
       p_nature_colis: natureColis,
       p_tel_destinataire: telNormalise,
-      p_montant_marchandise: montantMarchandise.trim() ? Number(montantMarchandise) : 0,
+      p_montant_marchandise: montantMarchandiseNombre,
     });
 
     setPublicationEnCours(false);
@@ -118,6 +131,14 @@ export default function PublierCourse() {
     >
       <ScrollView contentContainerStyle={styles.contenu}>
         <Text style={styles.titre}>Envoyer un colis</Text>
+
+        {erreurChargement ? (
+          <Pressable onPress={() => setTentativeChargement((n) => n + 1)}>
+            <Text style={styles.erreur}>
+              Impossible de charger les zones. Toucher pour reessayer.
+            </Text>
+          </Pressable>
+        ) : null}
 
         <Text style={styles.libelle}>Zone de retrait</Text>
         <View style={styles.rangeeChips}>

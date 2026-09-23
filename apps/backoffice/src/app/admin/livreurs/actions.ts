@@ -15,7 +15,10 @@ export async function validerLivreurAction(formData: FormData) {
   const { error } = await supabase.rpc("valider_livreur", { p_livreur_id: livreurId });
 
   if (error) {
-    console.error("Erreur valider_livreur:", error);
+    // Ne pas avaler l'erreur : sans ceci, un rejet concurrent du meme
+    // livreur par un autre administrateur (la ligne n'est deja plus
+    // en_attente) semblait reussir alors que rien n'avait ete applique.
+    throw new Error(error.message);
   }
 
   revalidatePath("/admin/livreurs");
@@ -33,7 +36,7 @@ export async function rejeterLivreurAction(formData: FormData) {
   });
 
   if (error) {
-    console.error("Erreur rejeter_livreur:", error);
+    throw new Error(error.message);
   }
 
   revalidatePath("/admin/livreurs");

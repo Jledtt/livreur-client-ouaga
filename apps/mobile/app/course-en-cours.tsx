@@ -23,6 +23,8 @@ export default function CourseEnCours() {
   const [zones, setZones] = useState<Record<number, string>>({});
   const [expediteur, setExpediteur] = useState<Expediteur | null>(null);
   const [bareme, setBareme] = useState<Supplement[]>([]);
+  const [totalSupplements, setTotalSupplements] = useState(0);
+  const [erreurChargement, setErreurChargement] = useState(false);
 
   const [codeRetrait, setCodeRetrait] = useState("");
   const [motifEchec, setMotifEchec] = useState("");
@@ -31,32 +33,43 @@ export default function CourseEnCours() {
 
   const charger = useCallback(async () => {
     if (!session) return;
+    setErreurChargement(false);
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("courses")
       .select("*")
       .eq("livreur_id", session.user.id)
       .in("statut", ["acceptee", "colis_recupere"])
       .maybeSingle();
 
+    if (error) {
+      setErreurChargement(true);
+      return;
+    }
+
     const courseActive = data as Course | null;
     setCourse(courseActive);
 
     if (!courseActive) return;
 
-    const [{ data: zonesData }, { data: expediteurData }, { data: baremeData }] = await Promise.all([
-      supabase.from("zones").select("id, nom"),
-      supabase
-        .from("utilisateurs")
-        .select("nom_complet, telephone")
-        .eq("id", courseActive.expediteur_id)
-        .maybeSingle(),
-      supabase.from("bareme_supplements").select("motif, montant").eq("actif", true),
-    ]);
+    const [{ data: zonesData }, { data: expediteurData }, { data: baremeData }, { data: supplementsData }] =
+      await Promise.all([
+        supabase.from("zones").select("id, nom"),
+        supabase
+          .from("utilisateurs")
+          .select("nom_complet, telephone")
+          .eq("id", courseActive.expediteur_id)
+          .maybeSingle(),
+        supabase.from("bareme_supplements").select("motif, montant").eq("actif", true),
+        supabase.from("supplements").select("montant").eq("course_id", courseActive.id),
+      ]);
 
     setZones(Object.fromEntries(((zonesData as Zone[]) ?? []).map((z) => [z.id, z.nom])));
     setExpediteur((expediteurData as Expediteur) ?? null);
     setBareme((baremeData as Supplement[]) ?? []);
+    setTotalSupplements(
+      ((supplementsData as { montant: number }[]) ?? []).reduce((total, s) => total + s.montant, 0),
+    );
   }, [session]);
 
   useEffect(() => {
@@ -98,18 +111,37 @@ export default function CourseEnCours() {
     }
     setErreur(null);
     setActionEnCours(true);
-    const { error } = await supabase.rpc("livrer_course", {
+    const { data, error } = await supabase.rpc("livrer_course", {
       p_course_id: course.id,
       p_code_retrait: codeRetrait.trim(),
     });
     setActionEnCours(false);
 
     if (error) {
-      setErreur("Code incorrect. Reessayez.");
+      Alert.alert("Erreur", "Impossible de verifier le code pour le moment.");
       return;
     }
 
-    router.replace("/courses-disponibles");
+    // livrer_course ne leve pas d'exception pour un code incorrect (cela
+    // annulerait l'incrementation du compteur d'essais cote serveur) : il
+    // faut comparer le statut retourne pour distinguer succes, echec simple
+    // et bascule en a_verifier au bout de cinq essais.
+    const courseMiseAJour = data as Course;
+    if (courseMiseAJour.statut === "livree") {
+      router.replace("/courses-disponibles");
+      return;
+    }
+
+    if (courseMiseAJour.statut === "a_verifier") {
+      Alert.alert(
+        "Trop d'essais",
+        "Cette course a ete signalee pour verification apres plusieurs codes incorrects.",
+      );
+      router.replace("/courses-disponibles");
+      return;
+    }
+
+    setErreur("Code incorrect. Reessayez.");
   }
 
   async function declarerEchec() {
@@ -134,6 +166,17 @@ export default function CourseEnCours() {
     router.replace("/courses-disponibles");
   }
 
+  if (erreurChargement) {
+    return (
+      <View style={styles.centre}>
+        <Text style={styles.message}>Impossible de charger la course. Verifiez votre connexion.</Text>
+        <Pressable onPress={charger}>
+          <Text style={styles.lien}>Reessayer</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   if (course === undefined) {
     return (
       <View style={styles.centre}>
@@ -153,7 +196,7 @@ export default function CourseEnCours() {
     );
   }
 
-  const montantAEncaisser = course.tarif + course.montant_marchandise;
+  const montantAEncaisser = course.tarif + course.montant_marchandise + totalSupplements;
 
   return (
     <ScrollView contentContainerStyle={styles.contenu}>
@@ -183,6 +226,7 @@ export default function CourseEnCours() {
           {course.montant_marchandise > 0
             ? ` + ${course.montant_marchandise.toLocaleString("fr-FR")} marchandise`
             : ""}
+          {totalSupplements > 0 ? ` + ${totalSupplements.toLocaleString("fr-FR")} supplement(s)` : ""}
           )
         </Text>
       </View>

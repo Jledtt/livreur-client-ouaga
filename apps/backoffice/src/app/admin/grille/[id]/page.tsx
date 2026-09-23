@@ -36,7 +36,8 @@ export default async function PageEditionGrille({
   }
 
   const zones = (zonesData ?? []) as Zone[];
-  const zoneDepartId = depart ? Number(depart) : zones[0]?.id;
+  const departParse = depart ? Number(depart) : NaN;
+  const zoneDepartId = zones.some((z) => z.id === departParse) ? departParse : zones[0]?.id;
 
   const { data: tarifsData } = zoneDepartId
     ? await supabase

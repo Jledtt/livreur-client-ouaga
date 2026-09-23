@@ -11,7 +11,7 @@ export async function creerZoneAction(formData: FormData) {
   const { error } = await supabase.rpc("creer_zone", { p_nom: nom });
 
   if (error) {
-    console.error("Erreur creer_zone:", error);
+    throw new Error(error.message);
   }
 
   revalidatePath("/admin/zones");
@@ -29,7 +29,7 @@ export async function definirStatutZoneAction(formData: FormData) {
   });
 
   if (error) {
-    console.error("Erreur definir_statut_zone:", error);
+    throw new Error(error.message);
   }
 
   revalidatePath("/admin/zones");

@@ -3,8 +3,14 @@
 --
 -- Convention : utilisateurs.id est le meme identifiant que auth.uid() (Supabase Auth,
 -- authentification par telephone + code a usage unique). Les policies RLS s'appuient
--- dessus. Le back-office (Next.js) opere avec la cle de service et n'est donc pas
--- soumis a ces policies (RG voir section 7.5 -- aucune cle de service dans le mobile).
+-- dessus. Les administrateurs du back-office (Next.js) ont un parcours distinct,
+-- email + mot de passe (voir la table administrateurs, migration
+-- inscription_livreur_admin.sql) : le back-office agit avec la session de
+-- l'administrateur connecte pour la plupart des ecritures (afin que
+-- auth.uid() et journal_admin portent sa vraie identite), et n'utilise la
+-- cle de service que pour des lectures ponctuelles qui le justifient (ex :
+-- generation d'URL signees pour les pieces d'identite). Cette cle n'est en
+-- revanche jamais presente dans l'application mobile (7.5).
 
 -- ============================================================================
 -- Types enumeres
@@ -215,7 +221,8 @@ create table supplements (
   course_id uuid not null references courses (id),
   motif text not null,
   montant integer not null check (montant > 0),
-  declare_le timestamptz not null default now()
+  declare_le timestamptz not null default now(),
+  unique (course_id, motif)
 );
 
 comment on table supplements is 'Un seul supplement par motif et par course (5.6). Declaration uniquement entre acceptee et livree.';
@@ -235,6 +242,42 @@ create table notations (
 );
 
 comment on table notations is 'Un enregistrement par course au plus, saisi par l''expediteur uniquement.';
+
+-- L'insertion d'une notation se fait par une policy RLS directe (pas une
+-- fonction security definer dediee, une note 1-5 ne presente pas de risque
+-- financier) : ce trigger recalcule livreurs.note_moyenne/nb_notations a
+-- chaque insertion, pour que ces colonnes stockees (RG-42 a RG-45) restent
+-- a jour sans etape supplementaire cote client.
+create or replace function recalculer_note_livreur()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_livreur_id uuid;
+begin
+  select livreur_id into v_livreur_id from courses where id = new.course_id;
+
+  update livreurs
+  set nb_notations = stats.nb,
+      note_moyenne = stats.moyenne
+  from (
+    select count(*) as nb, round(avg(notations.note)::numeric, 1) as moyenne
+    from notations
+    join courses on courses.id = notations.course_id
+    where courses.livreur_id = v_livreur_id
+  ) as stats
+  where livreurs.utilisateur_id = v_livreur_id;
+
+  return new;
+end;
+$$;
+
+create trigger notations_recalculer_note
+  after insert on notations
+  for each row
+  execute function recalculer_note_livreur();
 
 -- ============================================================================
 -- signalements (RG-46 a RG-49)
@@ -318,6 +361,18 @@ create policy utilisateurs_select_own on utilisateurs
 create policy utilisateurs_update_own on utilisateurs
   for update using (id = auth.uid());
 
+-- RLS est ligne par ligne, pas colonne par colonne : sans restriction
+-- supplementaire, la policy ci-dessus laisserait un client modifier
+-- directement telephone (contournant la verification OTP qui lie le numero
+-- a l'identite) ou est_livreur. On retire le droit UPDATE general et on ne
+-- le redonne que sur nom_complet ; les privileges d'objet (GRANT) sont
+-- independants de RLS. soumettre_inscription_livreur() continue de pouvoir
+-- ecrire est_livreur : les fonctions security definer s'executent avec les
+-- droits du proprietaire de la table, qui n'est jamais soumis a ses propres
+-- GRANT/REVOKE.
+revoke update on utilisateurs from authenticated;
+grant update (nom_complet) on utilisateurs to authenticated;
+
 -- livreurs : un livreur lit sa propre fiche. Le profil public (nom, note, compteur)
 -- est expose aux expediteurs via une fonction serveur dediee, pas par lecture directe.
 create policy livreurs_select_own on livreurs
@@ -342,15 +397,14 @@ create policy bareme_supplements_select_all on bareme_supplements
 create policy courses_select_expediteur on courses
   for select using (expediteur_id = auth.uid());
 
+-- Un livreur ne lit la table courses en direct que pour les courses deja
+-- attribuees (RLS est ligne par ligne, pas colonne par colonne : ouvrir
+-- cette policy aux courses 'publiee' exposerait tel_destinataire et les
+-- autres details a tout livreur navigant la liste, avant meme d'accepter).
+-- Parcourir les courses disponibles passe par lister_courses_disponibles(),
+-- qui ne renvoie que les colonnes necessaires a cet ecran (voir plus bas).
 create policy courses_select_livreur on courses
-  for select using (
-    livreur_id = auth.uid()
-    or (statut = 'publiee' and exists (
-      select 1 from livreurs
-      where livreurs.utilisateur_id = auth.uid()
-        and livreurs.statut = 'valide'
-    ))
-  );
+  for select using (livreur_id = auth.uid());
 
 create policy courses_insert_expediteur on courses
   for insert with check (expediteur_id = auth.uid());

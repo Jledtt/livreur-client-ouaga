@@ -144,7 +144,11 @@ begin
     raise exception 'Le montant doit etre positif';
   end if;
 
-  select etat into v_etat from grilles where id = p_grille_id;
+  -- Verrou sur la ligne grilles : sans lui, cette lecture et l'UPDATE
+  -- d'activer_grille() sur la meme ligne pourraient s'entrelacer et laisser
+  -- passer un tarif ecrit juste apres l'activation de la grille (RG-02 :
+  -- une grille active est figee).
+  select etat into v_etat from grilles where id = p_grille_id for update;
   if v_etat is null then
     raise exception 'Grille introuvable' using errcode = 'P0001';
   end if;

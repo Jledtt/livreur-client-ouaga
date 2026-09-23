@@ -16,7 +16,7 @@ export async function confirmerRechargeAction(formData: FormData) {
   });
 
   if (error) {
-    console.error("Erreur confirmer_recharge_manuellement:", error);
+    throw new Error(error.message);
   }
 
   revalidatePath("/admin/recharges");
@@ -35,7 +35,7 @@ export async function rejeterRechargeAction(formData: FormData) {
   });
 
   if (error) {
-    console.error("Erreur confirmer_recharge_manuellement:", error);
+    throw new Error(error.message);
   }
 
   revalidatePath("/admin/recharges");

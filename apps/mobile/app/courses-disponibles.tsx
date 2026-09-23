@@ -3,27 +3,36 @@ import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleShe
 import { Redirect, router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { useSession } from "../lib/session-provider";
-import type { Course, Zone } from "../lib/types";
+import type { CourseDisponible, Zone } from "../lib/types";
 
 export default function CoursesDisponibles() {
   const { session } = useSession();
   const [statutLivreur, setStatutLivreur] = useState<string | null | undefined>(undefined);
   const [courseEnCours, setCourseEnCours] = useState<boolean | undefined>(undefined);
   const [zones, setZones] = useState<Record<number, string>>({});
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<CourseDisponible[]>([]);
   const [chargement, setChargement] = useState(true);
+  const [erreurChargement, setErreurChargement] = useState(false);
   const [acceptationEnCours, setAcceptationEnCours] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     if (!session) return;
     setChargement(true);
+    setErreurChargement(false);
 
-    const { data: courseActive } = await supabase
+    const { data: courseActive, error: erreurCourseActive } = await supabase
       .from("courses")
       .select("id")
       .eq("livreur_id", session.user.id)
       .in("statut", ["acceptee", "colis_recupere"])
       .maybeSingle();
+
+    if (erreurCourseActive) {
+      setErreurChargement(true);
+      setChargement(false);
+      return;
+    }
+
     setCourseEnCours(!!courseActive);
 
     if (courseActive) {
@@ -31,13 +40,19 @@ export default function CoursesDisponibles() {
       return;
     }
 
-    const [{ data: zonesData }, { data: coursesData }] = await Promise.all([
+    const [{ data: zonesData }, { data: coursesData, error: erreurCourses }] = await Promise.all([
       supabase.from("zones").select("id, nom"),
-      supabase.from("courses").select("*").eq("statut", "publiee").order("publiee_le"),
+      supabase.rpc("lister_courses_disponibles"),
     ]);
 
+    if (erreurCourses) {
+      setErreurChargement(true);
+      setChargement(false);
+      return;
+    }
+
     setZones(Object.fromEntries(((zonesData as Zone[]) ?? []).map((z) => [z.id, z.nom])));
-    setCourses((coursesData as Course[]) ?? []);
+    setCourses((coursesData as CourseDisponible[]) ?? []);
     setChargement(false);
   }, [session]);
 
@@ -117,6 +132,14 @@ export default function CoursesDisponibles() {
     <View style={styles.conteneur}>
       <Text style={styles.titre}>Courses disponibles</Text>
 
+      {erreurChargement ? (
+        <Pressable onPress={charger}>
+          <Text style={styles.erreurChargement}>
+            Impossible de charger les courses. Toucher pour reessayer.
+          </Text>
+        </Pressable>
+      ) : null}
+
       <FlatList
         data={courses}
         keyExtractor={(item) => item.id}
@@ -166,6 +189,12 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   message: { textAlign: "center", color: "#555", fontSize: 15 },
   titre: { fontSize: 22, fontWeight: "700", paddingHorizontal: 24, marginBottom: 12 },
+  erreurChargement: {
+    color: "#B3261E",
+    fontSize: 13,
+    paddingHorizontal: 24,
+    marginBottom: 12,
+  },
   liste: { paddingHorizontal: 24, paddingBottom: 40, gap: 12 },
   vide: { textAlign: "center", color: "#999", marginTop: 40 },
   carte: {

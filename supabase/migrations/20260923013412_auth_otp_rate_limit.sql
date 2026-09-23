@@ -22,30 +22,38 @@ create index demandes_otp_telephone_demande_le_idx
 alter table demandes_otp enable row level security;
 -- Aucune policy : seule la cle de service (fonction Edge) y accede.
 
-create or replace function peut_demander_otp(p_telephone text)
+-- peut_demander_otp et enregistrer_demande_otp existaient a l'origine comme
+-- deux appels RPC separes (verifier puis enregistrer). Deux requetes
+-- concurrentes pour le meme numero pouvaient toutes les deux lire un compte
+-- sous la limite avant qu'aucune n'ait encore enregistre sa demande,
+-- contournant la limite de trois par heure (verification-puis-action non
+-- atomique entre deux transactions distinctes). demander_otp() fusionne les
+-- deux en une seule fonction, un seul aller-retour, protegee par un verrou
+-- consultatif scope au numero : les appels concurrents pour le meme numero
+-- s'executent desormais en serie.
+create or replace function demander_otp(p_telephone text)
 returns boolean
-language sql
-stable
+language plpgsql
 security definer
 set search_path = public
 as $$
-  select count(*) < 3
+declare
+  v_autorise boolean;
+begin
+  perform pg_advisory_xact_lock(hashtext(p_telephone));
+
+  select count(*) < 3 into v_autorise
   from demandes_otp
   where telephone = p_telephone
     and demande_le > now() - interval '1 hour';
+
+  if v_autorise then
+    insert into demandes_otp (telephone) values (p_telephone);
+  end if;
+
+  return v_autorise;
+end;
 $$;
 
-create or replace function enregistrer_demande_otp(p_telephone text)
-returns void
-language sql
-security definer
-set search_path = public
-as $$
-  insert into demandes_otp (telephone) values (p_telephone);
-$$;
-
-revoke execute on function peut_demander_otp(text) from public;
-revoke execute on function enregistrer_demande_otp(text) from public;
-
-grant execute on function peut_demander_otp(text) to service_role;
-grant execute on function enregistrer_demande_otp(text) to service_role;
+revoke execute on function demander_otp(text) from public;
+grant execute on function demander_otp(text) to service_role;

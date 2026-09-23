@@ -16,9 +16,11 @@ export async function creerGrilleAction(formData: FormData) {
       typeof copierDepuis === "string" && copierDepuis.length > 0 ? Number(copierDepuis) : null,
   });
 
-  if (error || !data) {
-    console.error("Erreur creer_grille_brouillon:", error);
-    return;
+  if (error) {
+    throw new Error(error.message);
+  }
+  if (!data) {
+    throw new Error("Aucune grille retournee");
   }
 
   revalidatePath("/admin/grille");
@@ -33,7 +35,7 @@ export async function activerGrilleAction(formData: FormData) {
   const { error } = await supabase.rpc("activer_grille", { p_grille_id: Number(grilleId) });
 
   if (error) {
-    console.error("Erreur activer_grille:", error);
+    throw new Error(error.message);
   }
 
   revalidatePath("/admin/grille");
