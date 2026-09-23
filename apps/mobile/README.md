@@ -27,8 +27,11 @@ Copier `.env.example` en `.env.local` et renseigner l'URL et la clé anonyme du 
 
 ## Statut
 
-Authentification par téléphone/OTP implémentée (`app/connexion/`) : demande de code via la fonction Edge `demander-code-connexion` (qui applique la limite de trois demandes par heure, RG voir 5.1), vérification avec `supabase.auth.verifyOtp`, session persistante via `lib/session-provider.tsx`. Navigation par [Expo Router](https://docs.expo.dev/router/introduction/).
+- **Authentification** (`app/connexion/`) — téléphone/OTP : demande de code via la fonction Edge `demander-code-connexion` (limite de trois demandes par heure, 5.1), vérification avec `supabase.auth.verifyOtp`, session persistante via `lib/session-provider.tsx`.
+- **Inscription livreur** (`app/inscription-livreur.tsx`) — nom complet, plaque, photos recto/verso de la pièce et selfie (via `expo-image-picker`), téléversées dans le bucket privé `pieces-identite` puis soumises à la fonction serveur `soumettre_inscription_livreur`. L'écran d'accueil (`app/accueil.tsx`) affiche le statut (en attente / validé / rejeté avec motif).
 
-Reste à faire pour le [lot 0](../../docs/roadmap.md#lot-0--fondations) : écran d'inscription livreur avec dépôt des pièces (photo recto/verso + selfie), écrans de publication et suivi de course (lot 1).
+Navigation par [Expo Router](https://docs.expo.dev/router/introduction/).
+
+Reste à faire pour le lot 1 : écrans de publication et de suivi de course.
 
 **Limite connue du monorepo :** `apps/mobile` épingle `react@19.2.3` (exigé par le SDK Expo) alors que `apps/backoffice` (Next.js) utilise une version plus récente, hoistée à la racine. npm conserve donc une copie locale de React dans `apps/mobile/node_modules`, ce que signale `npx expo-doctor`. C'est sans effet fonctionnel (Metro résout toujours la copie locale en priorité) ; à isoler proprement du reste du workspace npm si cela devient gênant.

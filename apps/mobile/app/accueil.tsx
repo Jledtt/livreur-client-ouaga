@@ -1,10 +1,44 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Redirect } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { Redirect, router } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { useSession } from "../lib/session-provider";
 
+type StatutLivreur = "en_attente" | "valide" | "rejete" | "suspendu";
+
+type FicheLivreur = {
+  statut: StatutLivreur;
+  motif_statut: string | null;
+} | null;
+
+const LIBELLES_STATUT: Record<StatutLivreur, string> = {
+  en_attente: "Votre inscription est en cours d'examen par un administrateur.",
+  valide: "Compte livreur valide.",
+  rejete: "Votre inscription a ete rejetee.",
+  suspendu: "Votre compte livreur est suspendu.",
+};
+
 export default function Accueil() {
   const { session, chargement } = useSession();
+  const [fiche, setFiche] = useState<FicheLivreur>(null);
+  const [chargementFiche, setChargementFiche] = useState(true);
+
+  useEffect(() => {
+    if (!session) {
+      setChargementFiche(false);
+      return;
+    }
+
+    supabase
+      .from("livreurs")
+      .select("statut, motif_statut")
+      .eq("utilisateur_id", session.user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setFiche(data as FicheLivreur);
+        setChargementFiche(false);
+      });
+  }, [session]);
 
   if (!chargement && !session) {
     return <Redirect href="/connexion/telephone" />;
@@ -15,9 +49,34 @@ export default function Accueil() {
       <Text style={styles.titre}>Connecte</Text>
       <Text style={styles.sousTitre}>{session?.user.phone}</Text>
 
+      {chargementFiche ? (
+        <ActivityIndicator style={{ marginTop: 16 }} />
+      ) : fiche ? (
+        <View style={styles.blocStatut}>
+          <Text style={styles.texteStatut}>{LIBELLES_STATUT[fiche.statut]}</Text>
+          {fiche.statut === "rejete" && fiche.motif_statut ? (
+            <Text style={styles.motif}>Motif : {fiche.motif_statut}</Text>
+          ) : null}
+          {fiche.statut === "rejete" ? (
+            <Pressable
+              style={styles.boutonSecondaire}
+              onPress={() => router.push("/inscription-livreur")}
+            >
+              <Text style={styles.texteBoutonSecondaire}>Soumettre une nouvelle inscription</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : (
+        <Pressable
+          style={styles.boutonSecondaire}
+          onPress={() => router.push("/inscription-livreur")}
+        >
+          <Text style={styles.texteBoutonSecondaire}>Devenir livreur</Text>
+        </Pressable>
+      )}
+
       <Text style={styles.note}>
-        Ecrans a venir (lot 0/1) : publication d'une course, inscription livreur, liste des
-        courses disponibles.
+        Ecrans a venir (lot 1) : publication d'une course, liste des courses disponibles.
       </Text>
 
       <Pressable style={styles.bouton} onPress={() => supabase.auth.signOut()}>
@@ -42,6 +101,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#555",
   },
+  blocStatut: {
+    marginTop: 16,
+    marginBottom: 16,
+    gap: 8,
+  },
+  texteStatut: {
+    fontSize: 15,
+    color: "#333",
+  },
+  motif: {
+    fontSize: 14,
+    color: "#B3261E",
+  },
   note: {
     fontSize: 14,
     color: "#777",
@@ -57,6 +129,18 @@ const styles = StyleSheet.create({
   },
   texteBouton: {
     color: "#0F4C5C",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  boutonSecondaire: {
+    backgroundColor: "#0F4C5C",
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  texteBoutonSecondaire: {
+    color: "#fff",
     fontSize: 16,
     fontWeight: "600",
   },

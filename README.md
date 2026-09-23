@@ -75,12 +75,12 @@ Le développement suit une logique de lots : faire fonctionner la boucle métier
 
 ## Statut
 
-Lot 0 bien avancé :
+Lot 0 quasiment bouclé :
 
-- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, et les fonctions serveur transactionnelles du cycle de vie d'une course (publication, acceptation atomique, suppléments, livraison, échec/annulation avec recrédit différé, expiration à 24h, recharge). Voir [supabase/README.md](supabase/README.md).
-- **Authentification** (`apps/mobile/app/connexion/`) — téléphone + code à usage unique, avec limitation à trois demandes par heure et par numéro via une fonction Edge dédiée, session persistante longue.
-- **Back-office** (`apps/backoffice/`) — squelette Next.js prêt, modules d'administration à implémenter.
+- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, fonctions serveur transactionnelles du cycle de vie d'une course (publication, acceptation atomique, suppléments, livraison, échec/annulation avec recrédit différé, expiration à 24h, recharge), inscription livreur et validation admin. Voir [supabase/README.md](supabase/README.md).
+- **Mobile** (`apps/mobile/`) — authentification téléphone/OTP (limite de trois demandes par heure et par numéro), inscription livreur avec dépôt des trois photos (recto/verso/selfie) dans un stockage privé. Voir [apps/mobile/README.md](apps/mobile/README.md).
+- **Back-office** (`apps/backoffice/`) — authentification admin (email/mot de passe) et module de validation des livreurs (aperçu des pièces via URL signées, valider/rejeter avec motif). Voir [apps/backoffice/README.md](apps/backoffice/README.md).
 
-Restent à faire pour terminer le lot 0 : inscription livreur avec dépôt des pièces, back-office de validation, gestion des zones/grille tarifaire côté admin.
+Reste à faire pour clore le lot 0 : gestion des zones et de la grille tarifaire côté back-office.
 
 Voir la section 11 du cahier des charges pour les points ouverts qui doivent être tranchés avant certains lots (liste des zones, montants de la grille tarifaire, choix des agrégateurs, etc.) — notamment l'**agrégateur SMS**, dont dépend l'envoi réel des codes de connexion et des notifications aux destinataires.
