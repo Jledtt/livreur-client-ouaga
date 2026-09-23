@@ -386,6 +386,18 @@ allow_dynamic_registration = false
 # code permettant ensuite de s'authentifier (voir section 5.1).
 verify_jwt = false
 
+[functions.initier-recharge-mobile-money]
+# Le livreur doit etre authentifie : son JWT est verifie par la plateforme,
+# puis retransmis a la fonction pour que initier_recharge() identifie
+# l'auteur via auth.uid().
+verify_jwt = true
+
+[functions.webhook-recharge-mobile-money]
+# Appele par l'agregateur mobile money, hors de toute session Supabase :
+# aucun JWT a verifier ici. L'authenticite doit etre etablie autrement
+# (signature, secret partage -- voir le TODO AGREGATEUR dans le code).
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

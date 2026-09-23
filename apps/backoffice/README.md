@@ -38,11 +38,15 @@ Sur un projet distant, la meme procedure s'applique depuis le dashboard Supabase
 
 ## Statut
 
-Lot 0 termine côté back-office :
+Lot 0 terminé côté back-office :
 
 - **Authentification admin** (email/mot de passe) — `/connexion`, garde d'accès dans `src/app/admin/layout.tsx` (vérifie la table `administrateurs`).
 - **Validation des livreurs** (`src/app/admin/livreurs/`) — liste des inscriptions en attente, aperçu des pièces (URL signées, 5 minutes), actions Valider/Rejeter.
 - **Zones** (`src/app/admin/zones/`) — création et activation/désactivation des quartiers.
 - **Grille tarifaire** (`src/app/admin/grille/`) — création d'une grille en brouillon (éventuellement copiée depuis une grille existante), édition zone de départ par zone de départ avec symétrie automatique (case miroir pré-remplie, sauf case "asymétrique" cochée), export CSV pour relecture à froid, activation explicite (archive automatiquement l'ancienne grille active — RG-05).
 
-Prochains lots : courses (`a_verifier`), signalements, recharges, barème des suppléments, tableau de bord (voir [docs/roadmap.md](../../docs/roadmap.md)).
+Infrastructure du lot 2 amorcée :
+
+- **Recharges** (`src/app/admin/recharges/`) — liste des transactions mobile money avec leur état, rapprochement manuel (Confirmer/Rejeter avec motif obligatoire) tant que l'agrégateur n'est pas branché. ⚠️ Voir [supabase/README.md](../../supabase/README.md#️-point-important-non-résolu--agrégateur-mobile-money) — c'est le point bloquant du lot 2, contractuel, pas technique.
+
+Prochains modules : courses (`a_verifier`), signalements, barème des suppléments, tableau de bord (voir [docs/roadmap.md](../../docs/roadmap.md)).

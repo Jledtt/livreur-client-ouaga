@@ -8,6 +8,7 @@ const LIENS_NAV = [
   { href: "/admin/livreurs", libelle: "Livreurs" },
   { href: "/admin/zones", libelle: "Zones" },
   { href: "/admin/grille", libelle: "Grille tarifaire" },
+  { href: "/admin/recharges", libelle: "Recharges" },
 ];
 
 export default async function LayoutAdmin({ children }: { children: ReactNode }) {

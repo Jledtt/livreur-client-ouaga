@@ -84,9 +84,14 @@ export default function Accueil() {
       </Pressable>
 
       {fiche?.statut === "valide" ? (
-        <Pressable style={styles.bouton} onPress={() => router.push("/courses-disponibles")}>
-          <Text style={styles.texteBouton}>Courses disponibles</Text>
-        </Pressable>
+        <>
+          <Pressable style={styles.bouton} onPress={() => router.push("/courses-disponibles")}>
+            <Text style={styles.texteBouton}>Courses disponibles</Text>
+          </Pressable>
+          <Pressable style={styles.bouton} onPress={() => router.push("/portefeuille")}>
+            <Text style={styles.texteBouton}>Mon portefeuille</Text>
+          </Pressable>
+        </>
       ) : null}
 
       <Pressable style={styles.bouton} onPress={() => supabase.auth.signOut()}>

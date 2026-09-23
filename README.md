@@ -73,16 +73,25 @@ cd supabase && npx supabase start
 
 Le développement suit une logique de lots : faire fonctionner la boucle métier complète avant d'y introduire l'argent, puis durcir. Voir [`docs/roadmap.md`](docs/roadmap.md) pour le détail des lots 0 à 5 et les points ouverts à trancher.
 
+## ⚠️ Points bloquants à régler (non techniques)
+
+Deux décisions ne dépendent pas de l'équipe de développement et conditionnent le lot 2. À engager dès maintenant (section 7.6/11 du cahier des charges) :
+
+1. **Choix de l'agrégateur mobile money** (Orange Money / Moov Money) — contractuel.
+2. **Entité juridique permettant l'accès au mobile money** — administratif, délai non maîtrisé.
+
+Tant qu'ils ne sont pas tranchés, aucune recharge ne peut aboutir automatiquement : toute demande de recharge reste `en_attente` et doit être rapprochée à la main depuis le back-office (module **Recharges**). Détails et TODO précis dans [supabase/README.md](supabase/README.md#️-point-important-non-résolu--agrégateur-mobile-money).
+
+(Un point du même ordre existe côté SMS — agrégateur non choisi non plus — mais il est moins bloquant : les codes de connexion fonctionnent déjà en local via `[auth.sms.test_otp]`.)
+
 ## Statut
 
-**Lot 0 terminé, lot 1 (boucle de course sans argent) fonctionnel de bout en bout** :
+**Lot 0 terminé, lot 1 (boucle de course sans argent) fonctionnel de bout en bout, infrastructure du lot 2 (portefeuille) prête côté code** :
 
-- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, fonctions serveur transactionnelles du cycle de vie d'une course (publication, acceptation atomique, suppléments, livraison, échec/annulation avec recrédit différé, expiration à 24h, recharge), inscription livreur, validation admin, gestion des zones et de la grille tarifaire, temps réel activé sur `courses`. Voir [supabase/README.md](supabase/README.md).
-- **Mobile** (`apps/mobile/`) — authentification téléphone/OTP, inscription livreur, **publication d'une course** avec tarif en direct, **suivi des envois** (expéditeur), **liste des courses disponibles** (temps réel + rafraîchissement manuel) et **suivi jusqu'à la clôture** par code de retrait (livreur). Voir [apps/mobile/README.md](apps/mobile/README.md).
-- **Back-office** (`apps/backoffice/`) — authentification admin, validation des livreurs, gestion des zones, édition de la grille tarifaire. Voir [apps/backoffice/README.md](apps/backoffice/README.md).
+- **Base de données** (`supabase/migrations/`) — schéma complet, politiques RLS, fonctions serveur transactionnelles du cycle de vie d'une course, inscription livreur, validation admin, gestion des zones et de la grille tarifaire, temps réel activé sur `courses`, et désormais l'infrastructure du portefeuille (ajustement admin, rapprochement manuel de recharge). Voir [supabase/README.md](supabase/README.md).
+- **Mobile** (`apps/mobile/`) — authentification téléphone/OTP, inscription livreur, publication et suivi de course, acceptation par le livreur jusqu'à la clôture, et désormais **portefeuille** (solde, historique) et **demande de recharge**. Voir [apps/mobile/README.md](apps/mobile/README.md).
+- **Back-office** (`apps/backoffice/`) — authentification admin, validation des livreurs, gestion des zones et de la grille tarifaire, et désormais **module Recharges** (rapprochement manuel). Voir [apps/backoffice/README.md](apps/backoffice/README.md).
 
-Le prélèvement est déjà calculé et enregistré à chaque acceptation (fonctions du lot 0), mais non exigible tant que le portefeuille n'existe pas : c'est le principe même du découpage en lots (tester la boucle complète avant d'y introduire l'argent). **Lot 2** : portefeuille, prélèvement effectif, recharge mobile money, découvert — voir [docs/roadmap.md](docs/roadmap.md).
+Le prélèvement à l'acceptation d'une course est déjà exigible (un livreur au solde nul ou négatif ne peut pas accepter, hors découvert d'une seule course) — ce qui, en pratique, bloque toute nouvelle inscription tant qu'un administrateur ne crédite pas manuellement le compte (`ajuster_solde_livreur`) en l'absence d'agrégateur mobile money.
 
 Non câblé pour l'instant : les **notifications push** (nécessitent un projet Firebase externe) — le temps réel Supabase sert de mécanisme de rafraîchissement en attendant.
-
-Voir la section 11 du cahier des charges pour les points ouverts qui doivent être tranchés avant certains lots (liste des zones, montants de la grille tarifaire, choix des agrégateurs, etc.) — notamment l'**agrégateur SMS**, dont dépend l'envoi réel des codes de connexion et des notifications aux destinataires.

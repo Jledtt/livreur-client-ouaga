@@ -34,13 +34,22 @@ Pour lier ce dossier à un projet Supabase distant : `npx supabase link --projec
 - [`20260923152143_inscription_livreur_admin.sql`](migrations/20260923152143_inscription_livreur_admin.sql) — table `administrateurs` (accès back-office, distinct du parcours téléphone/OTP), bucket de stockage privé `pieces-identite` avec policies scopées par dossier utilisateur, `soumettre_inscription_livreur` (parcours 4.5), `valider_livreur`/`rejeter_livreur` (réservées aux administrateurs, journalisées dans `journal_admin`).
 - [`20260923161514_zones_grille_tarifaire.sql`](migrations/20260923161514_zones_grille_tarifaire.sql) — `creer_zone`/`definir_statut_zone`, `creer_grille_brouillon` (avec copie optionnelle d'une grille existante), `definir_tarif` (symétrique par défaut, RG-05), `activer_grille` (archive l'ancienne grille active dans la même transaction, RG-02). Réservées aux administrateurs.
 - [`20260923185220_visibilite_contacts_realtime.sql`](migrations/20260923185220_visibilite_contacts_realtime.sql) — une fois une course attribuée, l'expéditeur peut lire le nom/note/compteur du livreur et le livreur peut lire les coordonnées de l'expéditeur (parcours 4.2/4.3) ; active le temps réel Supabase sur `courses`.
+- [`20260923190825_portefeuille_infrastructure.sql`](migrations/20260923190825_portefeuille_infrastructure.sql) — infrastructure du lot 2 : `ajuster_solde_livreur` (RG voir 5.3, mouvement `ajustement`, utile aussi pour créditer un livreur en développement tant que l'agrégateur n'est pas branché), `confirmer_recharge_manuellement` (rapprochement admin, distinct du webhook automatique), lecture admin sur `recharges`/`mouvements_credit`.
 
 Reste à écrire : notation, signalements (traitement), tableau de bord.
 
+## ⚠️ Point important non résolu : agrégateur mobile money
+
+L'agrégateur mobile money couvrant le Burkina Faso (Orange Money, Moov Money) **n'est pas encore choisi**. C'est un point ouvert **contractuel**, pas technique (section 7.6 et 11 du cahier des charges), qui conditionne tout le lot 2 et ne dépend pas de l'équipe de développement — à engager dès maintenant, au même titre que l'entité juridique permettant l'accès au mobile money (même section).
+
+Tout ce qui peut être préparé sans lui l'est déjà : schéma, fonctions, policies, et les deux fonctions Edge ci-dessous qui constituent l'unique point d'entrée où son API sera branchée (principe de 7.3 : encapsuler chaque intégration externe derrière une interface unique). En attendant, toute recharge reste `en_attente` indéfiniment et doit être rapprochée manuellement depuis le back-office (module **Recharges**).
+
 ## Fonctions Edge
 
-`functions/demander-code-connexion/` est le point d'entrée unique que le mobile appelle pour demander un code de connexion (jamais `supabase.auth.signInWithOtp()` directement) : il applique la limite de trois demandes par heure et par numéro avant de déclencher l'envoi réel. L'envoi effectif dépend d'un fournisseur SMS à configurer dans `config.toml` ([auth.sms]) — l'agrégateur couvrant le Burkina Faso reste un point ouvert (section 7.6/11 du cahier des charges) ; en local, seuls les numéros listés dans `[auth.sms.test_otp]` fonctionnent.
+- `functions/demander-code-connexion/` — point d'entrée unique que le mobile appelle pour demander un code de connexion (jamais `supabase.auth.signInWithOtp()` directement) : applique la limite de trois demandes par heure et par numéro avant de déclencher l'envoi réel. L'envoi effectif dépend d'un fournisseur SMS à configurer dans `config.toml` ([auth.sms]) — l'agrégateur SMS couvrant le Burkina Faso reste aussi un point ouvert (section 7.6/11) ; en local, seuls les numéros listés dans `[auth.sms.test_otp]` fonctionnent.
+- `functions/initier-recharge-mobile-money/` — appelée par le livreur authentifié pour créer une demande de recharge (`initier_recharge`). L'appel effectif à l'agrégateur est marqué `TODO AGREGATEUR` dans le code : rien à faire tant que le point ci-dessus n'est pas tranché.
+- `functions/webhook-recharge-mobile-money/` — reçue en théorie de l'agrégateur, hors session Supabase (`verify_jwt = false`). **Ne pas déployer en production avant d'avoir implémenté la vérification d'authenticité de la requête** (`requeteAuthentique`, actuellement un stub qui accepte tout) ni adapté `interpreterChargeUtile` au format réel de l'agrégateur retenu — les deux sont marqués `TODO AGREGATEUR`.
 
 ```bash
-npx supabase functions serve demander-code-connexion
+npx supabase functions serve
 ```

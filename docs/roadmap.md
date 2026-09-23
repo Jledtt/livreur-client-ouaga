@@ -27,6 +27,8 @@ Le découpage suit une logique simple : faire fonctionner la boucle métier comp
 - Découvert autorisé : condition de solde strictement positif, blocage après une course, annonce avant confirmation.
 - Déclaration d'échec et recrédit différé de 72 heures.
 
+> **Statut :** tout ce qui précède est implémenté côté code (schéma, fonctions serveur, écrans mobile portefeuille/recharge, module back-office Recharges) — voir [supabase/README.md](../supabase/README.md#️-point-important-non-résolu--agrégateur-mobile-money). **Bloqué en pratique par les deux points ouverts marqués ⚠️ ci-dessous** : sans agrégateur choisi et contractualisé, aucune recharge ne peut être confirmée automatiquement.
+
 ## Lot 3 — Destinataire et réputation
 
 - Envoi des SMS au destinataire et journal des envois.
@@ -64,8 +66,8 @@ Ces points ne bloquent pas le démarrage du développement, mais doivent être t
 | Délai avant qu'une course sans preneur soit signalée | Lot 1 | Décision |
 | Réception des réponses SMS entrantes par l'agrégateur | Lot 3 | Technique — conditionne le canal de signalement du destinataire |
 | Taux effectif élevé sur les petites courses (13 % à 500 FCFA) | Lot 1 | Décision — critère de calibrage de la grille |
-| Choix de l'agrégateur mobile money | Lot 2 | Contractuel |
-| Entité juridique permettant l'accès au mobile money | Lot 2 | Administratif |
+| ⚠️ Choix de l'agrégateur mobile money | Lot 2 | Contractuel — **bloquant, à engager maintenant** |
+| ⚠️ Entité juridique permettant l'accès au mobile money | Lot 2 | Administratif — **bloquant, délai non maîtrisé** |
 | Rédaction des conditions d'utilisation | Lot 4 | Juridique |
 | Validation de la clause de non-responsabilité | Lot 4 | Juridique — juriste burkinabè |
 | Qualification du crédit prépayé au regard des règles Apple | Lot 5 | Bloquant potentiel — à vérifier avant le développement iOS |
