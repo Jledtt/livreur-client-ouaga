@@ -5,9 +5,12 @@ import { verifierAdministrateurConnecte } from "@/lib/supabase/server";
 import DeconnexionBouton from "./deconnexion-bouton";
 
 const LIENS_NAV = [
+  { href: "/admin/tableau-de-bord", libelle: "Tableau de bord" },
   { href: "/admin/livreurs", libelle: "Livreurs" },
+  { href: "/admin/signalements", libelle: "Signalements" },
   { href: "/admin/zones", libelle: "Zones" },
   { href: "/admin/grille", libelle: "Grille tarifaire" },
+  { href: "/admin/bareme-supplements", libelle: "Supplements" },
   { href: "/admin/recharges", libelle: "Recharges" },
 ];
 

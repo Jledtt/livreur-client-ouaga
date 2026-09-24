@@ -47,6 +47,8 @@ Le découpage suit une logique simple : faire fonctionner la boucle métier comp
 - Suppression de compte depuis l'application, exigée pour la publication iOS.
 - Conditions d'utilisation intégrées au parcours d'inscription.
 
+> **Statut :** barème des suppléments (création/modification/désactivation), file de signalements (prise en charge, clôture avec décision) et suspension/levée manuelle d'un livreur, tableau de bord (courses du jour, taux d'acceptation, courses sans preneur, échecs, volume de prélèvement) implémentés côté back-office. Restent : traitement des courses `a_verifier`, tests sur appareils réels (nécessite du matériel physique), suppression de compte, et conditions d'utilisation (rédaction juridique, hors périmètre du développement).
+
 ## Lot 5 — Publication iOS
 
 - Configuration du projet iOS, certificats, notifications APNs.

@@ -49,4 +49,10 @@ Infrastructure du lot 2 amorcée :
 
 - **Recharges** (`src/app/admin/recharges/`) — liste des transactions mobile money avec leur état, rapprochement manuel (Confirmer/Rejeter avec motif obligatoire) tant que l'agrégateur n'est pas branché. ⚠️ Voir [supabase/README.md](../../supabase/README.md#️-point-important-non-résolu--agrégateur-mobile-money) — c'est le point bloquant du lot 2, contractuel, pas technique.
 
-Prochains modules : courses (`a_verifier`), signalements, barème des suppléments, tableau de bord (voir [docs/roadmap.md](../../docs/roadmap.md)).
+Lot 4 amorcé :
+
+- **Signalements** (`src/app/admin/signalements/`) — file des signalements (ouvert/en cours/clos) avec le contexte de la course et des deux parties, prise en charge, clôture avec décision obligatoire, et suspension/levée de suspension du livreur concerné directement depuis le signalement.
+- **Barème des suppléments** (`src/app/admin/bareme-supplements/`) — création de motifs, modification du montant, activation/désactivation.
+- **Tableau de bord** (`src/app/admin/tableau-de-bord/`) — courses publiées aujourd'hui, taux d'acceptation du jour, courses actuellement sans preneur, échecs déclarés aujourd'hui, volume de prélèvement du jour. Page d'accueil du back-office.
+
+Prochains modules : courses (`a_verifier`) — traitement des courses remontées automatiquement après 24h sans clôture.
