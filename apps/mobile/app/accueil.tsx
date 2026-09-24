@@ -115,6 +115,10 @@ export default function Accueil() {
       <Pressable style={styles.bouton} onPress={() => supabase.auth.signOut()}>
         <Text style={styles.texteBouton}>Se deconnecter</Text>
       </Pressable>
+
+      <Pressable onPress={() => router.push("/supprimer-compte")}>
+        <Text style={styles.lienSuppression}>Supprimer mon compte</Text>
+      </Pressable>
     </View>
   );
 }
@@ -176,5 +180,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  lienSuppression: {
+    textAlign: "center",
+    marginTop: 8,
+    color: "#999",
+    fontSize: 13,
   },
 });

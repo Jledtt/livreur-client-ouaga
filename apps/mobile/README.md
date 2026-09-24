@@ -35,6 +35,7 @@ Copier `.env.example` en `.env.local` et renseigner l'URL et la clé anonyme du 
 - **Course en cours** (`app/course-en-cours.tsx`) — coordonnées de l'expéditeur, montant à encaisser, déclaration de supplément (barème), saisie du code de retrait pour clôturer, déclaration d'échec.
 - **Portefeuille** (`app/portefeuille.tsx`) — solde disponible, dette éventuelle, montants en attente (recrédits différés de 72h), historique des mouvements.
 - **Recharge** (`app/recharger.tsx`) — montant et opérateur (Orange Money / Moov Money), envoie la demande via la fonction Edge `initier-recharge-mobile-money`. ⚠️ Le paiement réel ne peut pas encore aboutir : voir [supabase/README.md](../../supabase/README.md#️-point-important-non-résolu--agrégateur-mobile-money). En attendant, la recharge reste "en attente" jusqu'à rapprochement manuel côté back-office.
+- **Suppression de compte** (`app/supprimer-compte.tsx`) — écran de confirmation explicite (irréversible) accessible depuis l'accueil, appelle la fonction Edge `supprimer-compte`. Bloquée tant qu'une course est en cours. Anonymise les données (nom, téléphone, pièces d'identité) plutôt que de supprimer l'historique des courses, conservé à des fins comptables.
 
 Navigation par [Expo Router](https://docs.expo.dev/router/introduction/).
 
