@@ -54,5 +54,6 @@ Lot 4 amorcé :
 - **Signalements** (`src/app/admin/signalements/`) — file des signalements (ouvert/en cours/clos) avec le contexte de la course et des deux parties, prise en charge, clôture avec décision obligatoire, et suspension/levée de suspension du livreur concerné directement depuis le signalement.
 - **Barème des suppléments** (`src/app/admin/bareme-supplements/`) — création de motifs, modification du montant, activation/désactivation.
 - **Tableau de bord** (`src/app/admin/tableau-de-bord/`) — courses publiées aujourd'hui, taux d'acceptation du jour, courses actuellement sans preneur, échecs déclarés aujourd'hui, volume de prélèvement du jour. Page d'accueil du back-office.
+- **Courses** (`src/app/admin/courses/`) — file des courses `a_verifier` (24h sans clôture ou cinq codes de retrait incorrects), avec quatre résolutions possibles : relancer la saisie du code, marquer livrée, marquer échouée (recrédit différé) ou annuler (recrédit différé), motif obligatoire à chaque fois.
 
-Prochains modules : courses (`a_verifier`) — traitement des courses remontées automatiquement après 24h sans clôture.
+Reste pour le lot 4 : suppression de compte depuis l'application (côté mobile, buildable) ; hors périmètre du développement : tests sur appareils réels, conditions d'utilisation.

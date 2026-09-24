@@ -7,6 +7,7 @@ import DeconnexionBouton from "./deconnexion-bouton";
 const LIENS_NAV = [
   { href: "/admin/tableau-de-bord", libelle: "Tableau de bord" },
   { href: "/admin/livreurs", libelle: "Livreurs" },
+  { href: "/admin/courses", libelle: "Courses" },
   { href: "/admin/signalements", libelle: "Signalements" },
   { href: "/admin/zones", libelle: "Zones" },
   { href: "/admin/grille", libelle: "Grille tarifaire" },
